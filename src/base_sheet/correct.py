@@ -168,11 +168,18 @@ def choose_octave_from_spectrum(
     e_lo = _band_energy(mag, freqs, f_lo)
     e_hi = _band_energy(mag, freqs, f_hi)
     e3_lo = _band_energy(mag, freqs, 3.0 * f_lo)
+    e3_hi = _band_energy(mag, freqs, 3.0 * f_hi)
     e5_lo = _band_energy(mag, freqs, 5.0 * f_lo)
     peak = max(e_hi, 1e-9)
     has_f0 = e_lo >= 0.07 * peak
     has_odd = (e3_lo + 0.5 * e5_lo) >= 0.12 * peak
-    if folded >= 40 and (has_f0 or has_odd):
+    # Odd harmonics of the *lower* pitch must beat those of the higher one.
+    # Otherwise a real G2/A2 (or a harmonic) is folded because 3f of E1
+    # leaks into the same band as the higher note's body.
+    lower_is_f0 = has_f0 or has_odd
+    if folded >= 55 and e_hi >= 1.5 * max(e_lo, 1e-12):
+        return folded
+    if folded >= 40 and lower_is_f0 and e3_lo > 1.15 * max(e3_hi, 1e-12):
         return lower
     if folded >= 40:
         return folded
@@ -217,47 +224,26 @@ def correct_note_octaves(
 
 
 def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) -> list[NoteEvent]:
-    """Fold highs toward the open-string register, not toward a wrong-octave median.
+    """Fold an H1 only toward a nearby same-chroma neighbor, not a global low.
 
-    If CREPE tracks H1 for a whole track, the global median is already +12 and
-    must not be used as the register anchor.
+    Mixed-register bass (low E plus real G2/A2, or flageolet) must keep the
+    high notes. A global median of pitches ≤39 folds every ≥40 note down.
     """
     if not notes:
         return []
     ordered = sorted(notes, key=lambda n: n.start)
     pitches = np.array([n.pitch for n in ordered], dtype=int)
     starts = np.array([n.start for n in ordered], dtype=float)
-    low = pitches[(pitches >= BASS_MIDI_MIN) & (pitches <= 39)]
-    low_med = None
-    if low.size >= max(6, int(0.12 * pitches.size)):
-        low_med = float(np.median(low))
     out: list[NoteEvent] = []
-    for note in ordered:
-        local = pitches[np.abs(starts - note.start) <= window_s]
-        if local.size == 0:
-            out.append(note)
-            continue
-        refs = [float(np.median(local))]
-        if low_med is not None:
-            refs.append(low_med)
+    for i, note in enumerate(ordered):
+        nearby = [
+            int(pitches[j])
+            for j in range(len(ordered))
+            if j != i and abs(float(starts[j]) - float(starts[i])) <= window_s
+        ]
         pitch = int(note.pitch)
-        lowered = pitch - 12
-        if (
-            low_med is not None
-            and pitch >= 40
-            and lowered >= BASS_MIDI_MIN
-            and abs(lowered - low_med) <= abs(pitch - low_med) + 2.0
-        ):
-            pitch = lowered
-        changed = True
-        while changed:
-            changed = False
-            next_low = pitch - 12
-            if next_low < BASS_MIDI_MIN:
-                break
-            if any(abs(next_low - ref) + 1.5 < abs(pitch - ref) for ref in refs):
-                pitch = next_low
-                changed = True
+        while pitch - 12 >= BASS_MIDI_MIN and any(p == pitch - 12 for p in nearby):
+            pitch -= 12
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )

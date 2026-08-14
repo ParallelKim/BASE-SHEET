@@ -98,17 +98,47 @@ def test_pure_e2_sine_keeps_e2():
     assert out[0].pitch == 40
 
 
-def test_snap_register_folds_e2_when_low_register_present():
+def test_snap_register_folds_e2_next_to_e1():
     notes = [
-        NoteEvent(0.0, 0.2, 33),
-        NoteEvent(0.2, 0.4, 38),
+        NoteEvent(0.0, 0.2, 28),
+        NoteEvent(0.2, 0.4, 30),
         NoteEvent(0.4, 0.6, 40),
-        NoteEvent(0.6, 0.8, 35),
-        NoteEvent(0.8, 1.0, 33),
-        NoteEvent(1.0, 1.2, 38),
-        NoteEvent(1.2, 1.4, 42),
-        NoteEvent(1.4, 1.6, 35),
+        NoteEvent(0.6, 0.8, 28),
+        NoteEvent(0.8, 1.0, 42),
+        NoteEvent(1.0, 1.2, 30),
     ]
     out = snap_register_to_neighbors(notes)
     assert out[2].pitch == 28
-    assert out[6].pitch == 30
+    assert out[4].pitch == 30
+
+
+def test_snap_register_keeps_mixed_g2_among_open_strings():
+    notes = [
+        NoteEvent(0.0, 0.2, 28),
+        NoteEvent(0.2, 0.4, 33),
+        NoteEvent(0.4, 0.6, 43),
+        NoteEvent(0.6, 0.8, 38),
+        NoteEvent(0.8, 1.0, 28),
+        NoteEvent(1.0, 1.2, 33),
+    ]
+    out = snap_register_to_neighbors(notes)
+    assert out[2].pitch == 43
+
+
+def test_snap_register_keeps_flageolet_g4():
+    notes = [
+        NoteEvent(0.0, 0.2, 36),
+        NoteEvent(0.2, 0.6, 67),
+        NoteEvent(0.6, 0.8, 36),
+    ]
+    out = snap_register_to_neighbors(notes)
+    assert out[1].pitch == 67
+
+
+def test_spectrum_keeps_g2_when_odd_harmonics_belong_to_g2():
+    freqs = np.linspace(0, 500, 1001)
+    mag = np.zeros_like(freqs)
+    mag[(freqs >= 94) & (freqs <= 102)] = 1.0  # G2
+    mag[(freqs >= 190) & (freqs <= 202)] = 0.5
+    mag[(freqs >= 286) & (freqs <= 302)] = 0.35
+    assert choose_octave_from_spectrum(mag, freqs, 43) == 43

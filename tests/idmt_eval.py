@@ -26,6 +26,9 @@ class TrackScore:
     pitch_chroma: float
     pitch_within_semitone: float
     bpm: float
+    extras: int = 0
+    misses: int = 0
+    octave_err: int = 0
 
 
 def dataset_ready(root: Path = FIXTURE_DIR) -> bool:
@@ -74,10 +77,10 @@ def match_onsets(
     pred: list[NoteEvent],
     *,
     onset_tol: float = ONSET_TOL_S,
-) -> tuple[int, int, int, int]:
-    """Return tp, exact-pitch hits, chroma hits, ±1-semitone hits."""
+) -> tuple[int, int, int, int, int]:
+    """Return tp, exact-pitch hits, chroma hits, ±1-semitone hits, octave (±12) hits."""
     used: set[int] = set()
-    tp = exact = chroma = near = 0
+    tp = exact = chroma = near = octave = 0
     for tn in truth:
         best_i = None
         best_d = onset_tol + 1.0
@@ -99,7 +102,9 @@ def match_onsets(
             chroma += 1
         if abs(pn.pitch - tn.pitch) <= 1:
             near += 1
-    return tp, exact, chroma, near
+        if abs(pn.pitch - tn.pitch) == 12:
+            octave += 1
+    return tp, exact, chroma, near, octave
 
 
 def f_measure(tp: int, n_pred: int, n_truth: int) -> float:
@@ -127,7 +132,7 @@ def score_track(track_id: str, root: Path = FIXTURE_DIR) -> TrackScore:
         write_preview=False,
     )
     pred = result.performed
-    tp, exact, chroma, near = match_onsets(truth, pred)
+    tp, exact, chroma, near, octave = match_onsets(truth, pred)
     n_t, n_p = len(truth), len(pred)
     return TrackScore(
         track_id=track_id,
@@ -138,9 +143,41 @@ def score_track(track_id: str, root: Path = FIXTURE_DIR) -> TrackScore:
         pitch_chroma=(chroma / tp) if tp else 0.0,
         pitch_within_semitone=(near / tp) if tp else 0.0,
         bpm=result.bpm,
+        extras=max(0, n_p - tp),
+        misses=max(0, n_t - tp),
+        octave_err=octave,
     )
 
 
 def iter_track_ids(root: Path = FIXTURE_DIR) -> list[str]:
     wavs = sorted((root / "audio").glob("*.wav"))
     return [p.stem for p in wavs]
+
+
+def format_score(score: TrackScore) -> str:
+    return (
+        f"{score.track_id}  F={score.onset_f:.3f}  exact={score.pitch_exact:.3f}  "
+        f"chroma={score.pitch_chroma:.3f}  ±1={score.pitch_within_semitone:.3f}  "
+        f"oct12={score.octave_err:3d}  extra={score.extras:3d}  miss={score.misses:3d}  "
+        f"n={score.n_truth}/{score.n_pred}"
+    )
+
+
+if __name__ == "__main__":
+    import sys
+
+    root = Path(sys.argv[1]) if len(sys.argv) > 1 else FIXTURE_DIR
+    if not dataset_ready(root):
+        raise SystemExit(f"dataset missing under {root}")
+    scores = []
+    for tid in iter_track_ids(root):
+        score = score_track(tid, root)
+        scores.append(score)
+        print(format_score(score), flush=True)
+    n = len(scores)
+    print(
+        "mean  "
+        f"F={sum(s.onset_f for s in scores) / n:.3f}  "
+        f"exact={sum(s.pitch_exact for s in scores) / n:.3f}  "
+        f"chroma={sum(s.pitch_chroma for s in scores) / n:.3f}"
+    )
