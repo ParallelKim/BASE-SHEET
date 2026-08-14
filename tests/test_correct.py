@@ -125,6 +125,21 @@ def test_snap_register_keeps_mixed_g2_among_open_strings():
     assert out[2].pitch == 43
 
 
+def test_snap_register_keeps_octave_jumps_when_both_are_common():
+    notes = [
+        NoteEvent(0.0, 0.2, 36),
+        NoteEvent(0.2, 0.4, 36),
+        NoteEvent(0.4, 0.6, 48),
+        NoteEvent(0.6, 0.8, 48),
+        NoteEvent(0.8, 1.0, 46),
+        NoteEvent(1.0, 1.2, 43),
+        NoteEvent(1.2, 1.4, 36),
+        NoteEvent(1.4, 1.6, 48),
+    ]
+    out = snap_register_to_neighbors(notes)
+    assert [n.pitch for n in out] == [36, 36, 48, 48, 46, 43, 36, 48]
+
+
 def test_snap_register_keeps_flageolet_g4():
     notes = [
         NoteEvent(0.0, 0.2, 36),

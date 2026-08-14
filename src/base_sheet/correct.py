@@ -224,26 +224,37 @@ def correct_note_octaves(
 
 
 def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) -> list[NoteEvent]:
-    """Fold an H1 only toward a nearby same-chroma neighbor, not a global low.
+    """Fold a likely H1 when the same pitch class is mostly an octave down.
 
-    Mixed-register bass (low E plus real G2/A2, or flageolet) must keep the
-    high notes. A global median of pitches ≤39 folds every ≥40 note down.
+    Do not fold just because a neighbor exists at -12: bass lines jump
+    octaves (C2 then C3) on purpose. Only fold when the lower pitch
+    dominates the local window, or the high is a single isolated spike.
     """
     if not notes:
         return []
     ordered = sorted(notes, key=lambda n: n.start)
-    pitches = np.array([n.pitch for n in ordered], dtype=int)
+    pitches = [int(n.pitch) for n in ordered]
     starts = np.array([n.start for n in ordered], dtype=float)
     out: list[NoteEvent] = []
     for i, note in enumerate(ordered):
-        nearby = [
-            int(pitches[j])
+        local = [
+            pitches[j]
             for j in range(len(ordered))
-            if j != i and abs(float(starts[j]) - float(starts[i])) <= window_s
+            if abs(float(starts[j]) - float(starts[i])) <= window_s
         ]
-        pitch = int(note.pitch)
-        while pitch - 12 >= BASS_MIDI_MIN and any(p == pitch - 12 for p in nearby):
-            pitch -= 12
+        n_at: dict[int, int] = {}
+        for p in local:
+            n_at[p] = n_at.get(p, 0) + 1
+        pitch = pitches[i]
+        while pitch - 12 >= BASS_MIDI_MIN:
+            low = pitch - 12
+            n_hi = n_at.get(pitch, 0)
+            n_lo = n_at.get(low, 0)
+            isolated = n_hi == 1 and n_lo >= 1
+            dominated = n_lo >= 2 * n_hi and n_lo >= 4
+            if not (isolated or dominated):
+                break
+            pitch = low
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )
