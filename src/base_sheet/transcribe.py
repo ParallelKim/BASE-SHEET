@@ -84,6 +84,11 @@ def transcribe_crepe(
     """CREPE Notes segmentation on a torchcrepe or pYIN contour."""
     import librosa
 
+    target_sr = 22050
+    if int(sr) != target_sr:
+        y = librosa.resample(y, orig_sr=int(sr), target_sr=target_sr)
+        sr = target_sr
+
     packed = _f0_torchcrepe(y, int(sr))
     if packed is None:
         f0_hz, confidence, hop = _f0_pyin(y, int(sr))

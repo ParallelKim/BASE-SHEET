@@ -5,9 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-import librosa
-
 from base_sheet import notate, rhythm, transcribe
+from base_sheet.audio import load_mono
 from base_sheet.models import MIN_NOTE_DURATION_S, NoteEvent, QuantizedNote
 
 
@@ -40,7 +39,7 @@ def run(
     if not path.is_file():
         raise FileNotFoundError(f"Audio file not found: {path}")
 
-    y, sr = librosa.load(str(path), sr=None, mono=True)
+    y, sr = load_mono(path)
     raw_notes = (
         events
         if events is not None
