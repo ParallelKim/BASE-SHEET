@@ -8,6 +8,7 @@ build/
 .pytest_cache/
 .mypy_cache/
 out/
+tests/fixtures/idmt-smt-bass/
 *.mid
 *.musicxml
 *.xml

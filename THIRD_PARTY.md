@@ -15,5 +15,6 @@ sheet-music use.
 | [music21](https://github.com/cuthbertLab/music21) | BSD-3 | bass clef, ties, key analysis; 16ths + triplets via `--grid` |
 | [pretty_midi](https://github.com/craffel/pretty-midi) | MIT | GM electric bass program 33; `remove_invalid_notes`; no pitch-bend events |
 | [librosa](https://github.com/librosa/librosa) | ISC | load, pYIN fallback, onset fallback, tempo |
+| [IDMT-SMT-Bass-Single-Track](https://doi.org/10.5281/zenodo.7544099) (Abeßer et al.) | CC BY-NC-ND 4.0 | public eval set: 17 DI bass lines + onset/offset/pitch XML. **Not vendored** — `python scripts/fetch_idmt_bass.py` |
 
 madmom is optional and used only when installed. Personal non-commercial use is intended.

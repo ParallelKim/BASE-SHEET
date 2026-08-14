@@ -50,7 +50,17 @@ python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out --bpm 128
 
 같은 음을 8분으로 반복하는 라인(앤티프리즈 인트로)은 `--bpm`과 `--grid 8`을 악보와 맞추세요. 조표는 베이스 음만으로 F#(♯6)이 잘 안 나와 `--key F#`이 필요합니다.
 
-## 테스트 음원
+## 공개 평가셋 (악보가 없을 때)
+
+BassLift·NeuralNote는 베이스 스템 픽스처를 넣지 않습니다. Basic Pitch 테스트 음원은 vocadito(보컬)입니다.
+
+베이스 A2M용으로 공개된 건 Fraunhofer **IDMT-SMT-Bass-Single-Track** (17곡 DI, onset/offset/pitch XML, CC BY-NC-ND 4.0)입니다. 음원은 재배포하지 않고 받을 때만 씁니다.
+
+```bash
+python scripts/fetch_idmt_bass.py
+pytest tests/test_idmt.py -m slow
+```
+
 
 `tests/fixtures/Antifreeze_bass_mixed.m4a` — 미리 분리한 베이스. 출판 악보는 `tests/fixtures/Antifreeze_bass_score.pdf`.
 
