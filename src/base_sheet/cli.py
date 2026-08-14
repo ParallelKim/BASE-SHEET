@@ -73,8 +73,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Time signature: {result.time_signature}")
     print(f"Key: {result.key}")
     print(f"Notes: {result.note_count}")
-    print(f"Wrote: {result.midi_path}")
+    print(f"Wrote (listen MIDI): {result.midi_path}")
+    print(f"Wrote (quantized MIDI): {result.quantized_midi_path}")
     print(f"Wrote: {result.musicxml_path}")
+    if result.listen is not None:
+        print(
+            f"Listen vs stem: pitch±1={result.listen.pitch_within_semitone:.1%} "
+            f"chroma={result.listen.chroma_cosine:.2f} "
+            f"(voiced frames {result.listen.voiced_frames})"
+        )
     return 0
 
 

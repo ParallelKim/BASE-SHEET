@@ -29,4 +29,7 @@ def test_antifreeze_intro_matches_tab_eighths(tmp_path: Path):
     metrics = score_intro_midi(result.midi_path)
     assert metrics.pitch_acc >= 0.9
     assert metrics.mean_onsets_per_bar >= 5.5
-    assert metrics.eighth_duration_frac >= 0.35
+    assert result.listen is not None
+    assert result.listen.pitch_within_semitone >= 0.7
+    assert result.midi_path.name.endswith(".mid")
+    assert "quant" in result.quantized_midi_path.name

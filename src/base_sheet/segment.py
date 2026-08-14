@@ -206,7 +206,7 @@ def split_repeats_on_meter(
         while t <= note.end - min_dur + 1e-9:
             peak = env_near(t)
             trough = env_near(t - half)
-            reattack = peak >= 1.2 * max(trough, 1e-6) and peak >= 0.2 * attack
+            reattack = peak >= 1.12 * max(trough, 1e-6) and peak >= 0.15 * attack
             if reattack:
                 cuts.append(float(t))
             t += tick
@@ -238,3 +238,27 @@ def split_repeats_on_meter(
                     amplitude=prev.amplitude,
                 )
     return out
+
+
+def stamp_amplitudes(
+    y: np.ndarray,
+    sr: int | float,
+    notes: list[NoteEvent],
+) -> list[NoteEvent]:
+    """Set velocity-like amplitude from RMS at each onset."""
+    import librosa
+
+    if not notes:
+        return []
+    hop = 512
+    rms = librosa.feature.rms(y=y, hop_length=hop)[0]
+    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    peak = float(np.percentile(rms, 95) + 1e-9)
+    stamped: list[NoteEvent] = []
+    for note in notes:
+        idx = int(np.clip(np.searchsorted(times, note.start), 0, len(rms) - 1))
+        amp = float(np.clip(rms[idx] / peak, 0.15, 1.0))
+        stamped.append(
+            NoteEvent(start=note.start, end=note.end, pitch=note.pitch, amplitude=amp)
+        )
+    return stamped

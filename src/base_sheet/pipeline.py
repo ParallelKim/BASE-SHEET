@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from base_sheet import notate, rhythm, segment, transcribe
+from base_sheet import listen, notate, rhythm, segment, transcribe
 from base_sheet.audio import load_mono
+from base_sheet.listen import ListenScore
 from base_sheet.models import MIN_NOTE_DURATION_S, NoteEvent, QuantizedNote
 
 
@@ -18,8 +19,11 @@ class PipelineResult:
     note_count: int
     engine: str
     midi_path: Path
+    quantized_midi_path: Path
     musicxml_path: Path
     notes: list[QuantizedNote]
+    performed: list[NoteEvent]
+    listen: ListenScore | None
 
 
 def run(
@@ -49,6 +53,14 @@ def run(
         )
     )
     raw_notes = segment.split_repeats_on_meter(y, sr, raw_notes, used_bpm, grid)
+    raw_notes = segment.stamp_amplitudes(y, sr, raw_notes)
+    raw_notes = rhythm.make_monophonic(raw_notes)
+
+    out = Path(out_dir)
+    midi_path = notate.write_performance_midi(
+        raw_notes, out / f"{path.stem}.mid", used_bpm
+    )
+
     quantized = rhythm.quantize(raw_notes, used_bpm, grid=grid)
     key_hint = key
     if snap_key:
@@ -68,13 +80,17 @@ def run(
     displayed_key = (
         str(rhythm.parse_key_string(key_hint)) if key_hint else notate.key_name(written["score"])
     )
+    listen_score = listen.score_listen(y, sr, raw_notes)
     return PipelineResult(
         bpm=used_bpm,
         time_signature=time_signature,
         key=displayed_key,
-        note_count=len(quantized),
+        note_count=len(raw_notes),
         engine=engine,
-        midi_path=written["midi"],
+        midi_path=midi_path,
+        quantized_midi_path=written["midi"],
         musicxml_path=written["musicxml"],
         notes=quantized,
+        performed=raw_notes,
+        listen=listen_score,
     )

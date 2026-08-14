@@ -28,6 +28,8 @@ python -m base_sheet path/to/bass.m4a -o ./out --bpm 96 --grid 16
 python -m base_sheet path/to/bass.m4a -o ./out --engine basic-pitch --snap-key --key "E minor"
 ```
 
+`.mid`는 음원 시간축 그대로인 **청취용 MIDI**입니다. 양자화한 악보 MIDI는 `.quant.mid`, 기보는 `.musicxml`입니다. Basic Pitch는 `--engine basic-pitch`로만 쓰세요. 단악기 스템에서도 박이 어긋나기 쉽습니다.
+
 분리가 덜 된 스템은 다른 악기 잔여가 음표로 붙을 수 있습니다. `--min-duration`을 키우거나 `--bpm`을 직접 넣으세요.
 
 같은 음을 8분으로 반복하는 라인(앤티프리즈 인트로)은 `--bpm`과 `--grid 8`을 악보와 맞추세요. 조표는 베이스 음만으로 F#(♯6)이 잘 안 나와 `--key F#`이 필요합니다.

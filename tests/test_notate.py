@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from base_sheet.models import QuantizedNote
-from base_sheet.notate import build_score, write_score
+from base_sheet.models import NoteEvent, QuantizedNote
+from base_sheet.notate import build_score, write_performance_midi, write_score
 
 
 def test_score_uses_bass_clef_and_pitch(tmp_path: Path):
@@ -30,3 +30,15 @@ def test_build_score_title():
         title="Antifreeze",
     )
     assert score.metadata.title == "Antifreeze"
+
+
+def test_performance_midi_keeps_wall_clock(tmp_path: Path):
+    import pretty_midi
+
+    notes = [NoteEvent(0.70, 0.93, 35, 0.8), NoteEvent(0.93, 1.16, 35, 0.7)]
+    path = write_performance_midi(notes, tmp_path / "listen.mid", bpm=128.0)
+    pm = pretty_midi.PrettyMIDI(str(path))
+    got = pm.instruments[0].notes
+    assert abs(got[0].start - 0.70) < 0.01
+    assert got[0].end < got[1].start  # retrigger gap
+    assert got[0].pitch == 35

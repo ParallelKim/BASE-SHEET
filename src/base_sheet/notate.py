@@ -6,7 +6,7 @@ from pathlib import Path
 
 from music21 import clef, instrument, key, metadata, meter, note, stream, tempo
 
-from base_sheet.models import GM_ELECTRIC_BASS_FINGER, QuantizedNote
+from base_sheet.models import GM_ELECTRIC_BASS_FINGER, NoteEvent, QuantizedNote
 
 
 def parse_time_signature(value: str) -> meter.TimeSignature:
@@ -53,6 +53,50 @@ def build_score(
     return score
 
 
+def write_performance_midi(
+    notes: list[NoteEvent],
+    path: Path,
+    bpm: float,
+    *,
+    retrigger_gap: float = 0.012,
+) -> Path:
+    """Write audio-aligned MIDI (seconds), not the quantized score grid.
+
+    Same-pitch repeats get a short gap so a sampler retriggers instead of
+    holding one long note — that is what makes playback match the stem.
+    """
+    import pretty_midi
+
+    from base_sheet.rhythm import amplitude_to_velocity, make_monophonic
+
+    events = make_monophonic(notes)
+    pm = pretty_midi.PrettyMIDI(initial_tempo=float(bpm))
+    inst = pretty_midi.Instrument(program=GM_ELECTRIC_BASS_FINGER, name="Bass")
+    for i, note in enumerate(events):
+        start = float(note.start)
+        end = float(note.end)
+        if i + 1 < len(events):
+            nxt = events[i + 1]
+            end = min(end, float(nxt.start))
+            if nxt.pitch == note.pitch:
+                end = min(end, float(nxt.start) - retrigger_gap)
+        if end - start < 0.02:
+            end = start + 0.02
+        inst.notes.append(
+            pretty_midi.Note(
+                velocity=amplitude_to_velocity(note.amplitude),
+                pitch=int(note.pitch),
+                start=max(0.0, start),
+                end=end,
+            )
+        )
+    pm.instruments.append(inst)
+    pm.remove_invalid_notes()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pm.write(str(path))
+    return path
+
+
 def write_midi(notes: list[QuantizedNote], path: Path, bpm: float) -> Path:
     import pretty_midi
 
@@ -90,7 +134,7 @@ def write_score(
     score = build_score(
         notes, bpm=bpm, time_signature=time_signature, title=stem, key_hint=key_hint
     )
-    midi_path = out / f"{stem}.mid"
+    midi_path = out / f"{stem}.quant.mid"
     xml_path = out / f"{stem}.musicxml"
     write_midi(notes, midi_path, bpm)
     score.write("musicxml", fp=str(xml_path))
