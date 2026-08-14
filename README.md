@@ -1,1 +1,51 @@
 # BASE-SHEET
+
+분리된(또는 분리 잔여가 있는) 베이스 스템을 MIDI와 MusicXML 악보로 바꿉니다. 개인 악보 제작용이며 수익화하지 않습니다.
+
+저장소 전체를 복제하지 않고, CREPE Notes·BassLift·Basic Pitch/NeuralNote·music21에서 **후처리 알고리즘만** 가져옵니다. 출처는 [THIRD_PARTY.md](THIRD_PARTY.md)를 보세요.
+
+## 설치
+
+Python 3.10–3.12, ffmpeg(m4a 등).
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+선택:
+
+- `pip install torchcrepe` — 저음 f0 (없으면 librosa pYIN)
+- `pip install basic-pitch` — `--engine basic-pitch`
+- `pip install git+https://github.com/CPJKU/madmom.git` — 반복음 온셋 (없으면 librosa)
+
+## 사용
+
+```bash
+python -m base_sheet path/to/bass.wav -o ./out
+python -m base_sheet path/to/bass.m4a -o ./out --bpm 96 --grid 16
+python -m base_sheet path/to/bass.m4a -o ./out --engine basic-pitch --snap-key --key "E minor"
+```
+
+분리가 덜 된 스템은 다른 악기 잔여가 음표로 붙을 수 있습니다. `--min-duration`을 키우거나 `--bpm`을 직접 넣으세요.
+
+## 테스트 음원
+
+`tests/fixtures/Antifreeze_bass_mixed.m4a` — 미리 분리한 베이스. 완전 분리는 아닐 수 있습니다.
+
+```bash
+python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out
+pytest
+```
+
+## CLI
+
+| 옵션 | 기본 | 의미 |
+|---|---|---|
+| `--engine` | `crepe` | `crepe` 또는 `basic-pitch` |
+| `--bpm` | 자동 | 템포 투표 생략 |
+| `--grid` | `16` | `8` `16` `8t` `16t` |
+| `--key` | 추정 | 예: `Em` |
+| `--snap-key` | off | 조성에 피치 스냅 |
+| `--min-duration` | 0.05 | 짧은 음 제거(초) |

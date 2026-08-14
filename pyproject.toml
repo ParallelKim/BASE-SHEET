@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "base-sheet"
+version = "0.1.0"
+description = "Transcribe isolated bass audio to MIDI and MusicXML"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "librosa>=0.10.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "music21>=9.1",
+    "pretty_midi>=0.2.10",
+    "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+crepe = ["torchcrepe"]
+basic-pitch = ["basic-pitch>=0.4.0"]
+madmom = ["madmom @ git+https://github.com/CPJKU/madmom.git"]
+
+[project.scripts]
+base-sheet = "base_sheet.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-m 'not slow'"
+markers = [
+    "slow: uses the real Antifreeze bass fixture (pYIN, tens of seconds)",
+]
