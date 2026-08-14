@@ -31,9 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--time-signature", default="4/4")
     parser.add_argument(
         "--grid",
-        default="16",
+        default="8",
         choices=["8", "16", "8t", "16t"],
-        help="Quantization grid (16ths default; t = triplets)",
+        help="Quantization grid (8ths default; t = triplets)",
     )
     parser.add_argument("--key", default=None, help='e.g. "E minor" or "Em"')
     parser.add_argument(

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from base_sheet import notate, rhythm, transcribe
+from base_sheet import notate, rhythm, segment, transcribe
 from base_sheet.audio import load_mono
 from base_sheet.models import MIN_NOTE_DURATION_S, NoteEvent, QuantizedNote
 
@@ -29,7 +29,7 @@ def run(
     bpm: float | None = None,
     time_signature: str = "4/4",
     engine: str = "crepe",
-    grid: str = "16",
+    grid: str = "8",
     key: str | None = None,
     snap_key: bool = False,
     min_duration: float = MIN_NOTE_DURATION_S,
@@ -40,6 +40,7 @@ def run(
         raise FileNotFoundError(f"Audio file not found: {path}")
 
     y, sr = load_mono(path)
+    used_bpm = float(bpm) if bpm is not None else rhythm.estimate_bpm(y, sr)
     raw_notes = (
         events
         if events is not None
@@ -47,7 +48,7 @@ def run(
             path, y, int(sr), engine=engine, min_duration=min_duration
         )
     )
-    used_bpm = float(bpm) if bpm is not None else rhythm.estimate_bpm(y, sr)
+    raw_notes = segment.split_repeats_on_meter(y, sr, raw_notes, used_bpm, grid)
     quantized = rhythm.quantize(raw_notes, used_bpm, grid=grid)
     key_hint = key
     if snap_key:
@@ -64,10 +65,13 @@ def run(
         time_signature=time_signature,
         key_hint=key_hint,
     )
+    displayed_key = (
+        str(rhythm.parse_key_string(key_hint)) if key_hint else notate.key_name(written["score"])
+    )
     return PipelineResult(
         bpm=used_bpm,
         time_signature=time_signature,
-        key=notate.key_name(written["score"]),
+        key=displayed_key,
         note_count=len(quantized),
         engine=engine,
         midi_path=written["midi"],

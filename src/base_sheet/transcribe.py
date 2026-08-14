@@ -112,8 +112,6 @@ def transcribe_crepe(
     notes = segment.contour_to_notes(
         midi, confidence, times, min_duration=min_duration, amplitudes=amps
     )
-    onsets = segment.detect_onsets(y, sr)
-    notes = segment.split_at_onsets(notes, onsets, min_duration=min_duration)
     return correct.drop_short_notes(notes, min_duration)
 
 
@@ -141,9 +139,6 @@ def transcribe_basic_pitch(
             continue
         notes.append(NoteEvent(start=start, end=end, pitch=folded, amplitude=amplitude))
     notes.sort(key=lambda n: (n.start, n.pitch))
-    notes = correct.drop_short_notes(notes, min_duration)
-    onsets = segment.detect_onsets(y, sr)
-    notes = segment.split_at_onsets(notes, onsets, min_duration=min_duration)
     return correct.drop_short_notes(notes, min_duration)
 
 

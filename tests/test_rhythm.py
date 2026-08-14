@@ -16,14 +16,23 @@ def test_time_to_tick_round():
     assert time_to_tick(0.125, 120, "16") == 1
 
 
-def test_merge_adjacent_same_pitch():
+def test_merge_does_not_join_full_grid_repeats():
     notes = [
         QuantizedNote(0.0, 0.5, 40, 80),
         QuantizedNote(0.5, 0.5, 40, 90),
         QuantizedNote(1.0, 0.5, 42, 80),
     ]
-    merged = merge_same_pitch(notes)
-    assert len(merged) == 2
-    assert merged[0].duration_ql == 1.0
+    merged = merge_same_pitch(notes, min_keep_ql=0.5)
+    assert len(merged) == 3
+    assert merged[1].pitch == 40
+
+
+def test_merge_glues_sub_grid_debris():
+    notes = [
+        QuantizedNote(0.0, 0.125, 40, 80),
+        QuantizedNote(0.125, 0.125, 40, 90),
+    ]
+    merged = merge_same_pitch(notes, min_keep_ql=0.25)
+    assert len(merged) == 1
+    assert merged[0].duration_ql == 0.25
     assert merged[0].velocity == 90
-    assert merged[1].pitch == 42

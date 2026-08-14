@@ -133,18 +133,33 @@ def quantize(
         )
 
     quantized.sort(key=lambda n: (n.offset_ql, n.pitch))
-    return merge_same_pitch(quantized)
+    grid_ql = 1.0 / tpq
+    return merge_same_pitch(quantized, min_keep_ql=grid_ql)
 
 
-def merge_same_pitch(notes: list[QuantizedNote], gap_ql: float = 1e-6) -> list[QuantizedNote]:
-    """Join adjacent equal pitches (BassLift / bass_v2 over-segmentation)."""
+def merge_same_pitch(
+    notes: list[QuantizedNote],
+    gap_ql: float = 1e-6,
+    min_keep_ql: float = 0.25,
+) -> list[QuantizedNote]:
+    """Glue only sub-grid fragments of the same pitch.
+
+    Full-length repeated attacks (e.g. eight B eighth-notes in Antifreeze)
+    must stay separate. BassLift's merge was meant for quantization splits,
+    not musical repeats.
+    """
     if not notes:
         return []
     out = [notes[0]]
     for note in notes[1:]:
         prev = out[-1]
         prev_end = prev.offset_ql + prev.duration_ql
-        if note.pitch == prev.pitch and note.offset_ql <= prev_end + gap_ql:
+        debris = prev.duration_ql < min_keep_ql - 1e-9 or note.duration_ql < min_keep_ql - 1e-9
+        if (
+            debris
+            and note.pitch == prev.pitch
+            and note.offset_ql <= prev_end + gap_ql
+        ):
             new_end = max(prev_end, note.offset_ql + note.duration_ql)
             out[-1] = QuantizedNote(
                 offset_ql=prev.offset_ql,

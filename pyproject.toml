@@ -31,7 +31,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]
 addopts = "-m 'not slow'"
 markers = [
     "slow: uses the real Antifreeze bass fixture (pYIN, tens of seconds)",

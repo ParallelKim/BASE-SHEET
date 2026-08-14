@@ -158,3 +158,83 @@ def split_at_onsets(
                     )
                 )
     return out
+
+
+def split_repeats_on_meter(
+    y: np.ndarray,
+    sr: int | float,
+    notes: list[NoteEvent],
+    bpm: float,
+    grid: str = "8",
+    *,
+    peak_ratio: float = 0.35,
+) -> list[NoteEvent]:
+    """Split a held pitch where the envelope re-attacks on the metrical grid.
+
+    Same-pitch eighths have ~0 f0 gradient, so contour segmentation cannot
+    see them. A decaying whole note has one attack; repeated 8ths re-peak
+    near each grid tick at a large fraction of that attack.
+    """
+    import librosa
+
+    from base_sheet.rhythm import seconds_per_tick
+
+    if not notes:
+        return []
+    hop = 256
+    rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=hop * 4)[0]
+    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    tick = seconds_per_tick(bpm, grid)
+    min_dur = max(0.05, 0.55 * tick)
+    half = 0.5 * tick
+    win = min(0.08, 0.35 * tick)
+
+    def env_near(t: float) -> float:
+        if len(rms) == 0:
+            return 0.0
+        mask = (times >= t - win) & (times <= t + win)
+        if not np.any(mask):
+            idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
+            return float(rms[idx])
+        return float(np.max(rms[mask]))
+
+    out: list[NoteEvent] = []
+    for note in notes:
+        attack = max(env_near(note.start), env_near(note.start + 0.02), 1e-6)
+        cuts = [note.start]
+        t = note.start + tick
+        while t <= note.end - min_dur + 1e-9:
+            peak = env_near(t)
+            trough = env_near(t - half)
+            reattack = peak >= 1.2 * max(trough, 1e-6) and peak >= 0.2 * attack
+            if reattack:
+                cuts.append(float(t))
+            t += tick
+        cuts.append(note.end)
+        dedup: list[float] = []
+        for cut in cuts:
+            if not dedup or cut - dedup[-1] >= min_dur * 0.5:
+                dedup.append(cut)
+            else:
+                dedup[-1] = cut
+        if dedup[-1] != note.end:
+            dedup.append(note.end)
+        for start, end in zip(dedup, dedup[1:]):
+            if end - start >= min_dur:
+                out.append(
+                    NoteEvent(
+                        start=start,
+                        end=end,
+                        pitch=note.pitch,
+                        amplitude=note.amplitude,
+                    )
+                )
+            elif out and out[-1].pitch == note.pitch:
+                prev = out[-1]
+                out[-1] = NoteEvent(
+                    start=prev.start,
+                    end=end,
+                    pitch=prev.pitch,
+                    amplitude=prev.amplitude,
+                )
+    return out

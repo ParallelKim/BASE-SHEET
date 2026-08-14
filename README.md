@@ -30,13 +30,16 @@ python -m base_sheet path/to/bass.m4a -o ./out --engine basic-pitch --snap-key -
 
 분리가 덜 된 스템은 다른 악기 잔여가 음표로 붙을 수 있습니다. `--min-duration`을 키우거나 `--bpm`을 직접 넣으세요.
 
+같은 음을 8분으로 반복하는 라인(앤티프리즈 인트로)은 `--bpm`과 `--grid 8`을 악보와 맞추세요. 조표는 베이스 음만으로 F#(♯6)이 잘 안 나와 `--key F#`이 필요합니다.
+
 ## 테스트 음원
 
-`tests/fixtures/Antifreeze_bass_mixed.m4a` — 미리 분리한 베이스. 완전 분리는 아닐 수 있습니다.
+`tests/fixtures/Antifreeze_bass_mixed.m4a` — 미리 분리한 베이스. 출판 악보는 `tests/fixtures/Antifreeze_bass_score.pdf`.
 
 ```bash
-python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out
+python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out --bpm 128 --grid 8 --key F#
 pytest
+pytest -m slow
 ```
 
 ## CLI
@@ -45,7 +48,7 @@ pytest
 |---|---|---|
 | `--engine` | `crepe` | `crepe` 또는 `basic-pitch` |
 | `--bpm` | 자동 | 템포 투표 생략 |
-| `--grid` | `16` | `8` `16` `8t` `16t` |
-| `--key` | 추정 | 예: `Em` |
-| `--snap-key` | off | 조성에 피치 스냅 |
+| `--grid` | `8` | `8` `16` `8t` `16t` |
+| `--key` | 추정 | 예: `F#`, `Em` |
+| `--snap-key` | off | 조성에 피치 스냅 (E 제자리표 곡은 끄기) |
 | `--min-duration` | 0.05 | 짧은 음 제거(초) |
