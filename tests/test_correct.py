@@ -69,3 +69,14 @@ def test_snap_register_folds_isolated_high():
     ]
     out = snap_register_to_neighbors(notes)
     assert out[1].pitch == 35
+
+
+def test_snap_register_folds_fsharp2_among_bass_roots():
+    notes = [
+        NoteEvent(0.0, 0.2, 35),
+        NoteEvent(0.2, 0.4, 42),
+        NoteEvent(0.4, 0.6, 30),
+        NoteEvent(0.6, 0.8, 28),
+    ]
+    out = snap_register_to_neighbors(notes)
+    assert out[1].pitch == 30

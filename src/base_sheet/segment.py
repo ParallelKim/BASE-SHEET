@@ -363,7 +363,7 @@ def split_repeated_pitches(
 
     tick = seconds_per_tick(bpm, grid)
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
-    onsets = _nms_times(onsets, max(0.12, 0.62 * tick))
+    onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
     split = _seed_holes_at_onsets(notes, onsets, tick)
     split = split_at_onsets(split, onsets, min_duration=min_duration)
     long: list[NoteEvent] = []

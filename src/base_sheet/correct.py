@@ -157,6 +157,16 @@ def choose_octave_from_spectrum(
     if folded + 12 <= BASS_MIDI_MAX:
         candidates.append(folded + 12)
     scored = [(_harmonic_score(mag, freqs, p), -abs(p - 36), p) for p in candidates]
+    # CREPE often locks onto H1; if the sub-octave has real energy, prefer it.
+    tracked = folded
+    lower = folded - 12
+    if lower >= BASS_MIDI_MIN:
+        import librosa
+
+        e_low = _band_energy(mag, freqs, float(librosa.midi_to_hz(lower)))
+        e_trk = _band_energy(mag, freqs, float(librosa.midi_to_hz(tracked)))
+        if e_low >= 0.18 * max(e_trk, 1e-9) and tracked >= 40:
+            scored = [(s + (4.0 if p == lower else 0.0), d, p) for s, d, p in scored]
     return max(scored)[2]
 
 
@@ -199,21 +209,24 @@ def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) ->
     ordered = sorted(notes, key=lambda n: n.start)
     pitches = np.array([n.pitch for n in ordered], dtype=int)
     starts = np.array([n.start for n in ordered], dtype=float)
+    global_med = float(np.median(pitches)) if pitches.size else 36.0
     out: list[NoteEvent] = []
     for i, note in enumerate(ordered):
         local = pitches[np.abs(starts - note.start) <= window_s]
         if local.size == 0:
             out.append(note)
             continue
-        med = float(np.median(local))
+        refs = [float(np.median(local)), global_med]
         pitch = int(note.pitch)
-        lowered = pitch - 12
-        if (
-            pitch >= 43
-            and lowered >= BASS_MIDI_MIN
-            and abs(lowered - med) + 3 < abs(pitch - med)
-        ):
-            pitch = lowered
+        changed = True
+        while changed:
+            changed = False
+            lowered = pitch - 12
+            if lowered < BASS_MIDI_MIN:
+                break
+            if any(abs(lowered - ref) + 1.5 < abs(pitch - ref) for ref in refs):
+                pitch = lowered
+                changed = True
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )
