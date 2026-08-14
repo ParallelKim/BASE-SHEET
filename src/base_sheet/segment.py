@@ -276,7 +276,6 @@ def split_repeats_on_meter(
             trough = _at(rms, t - half)
             reattack = peak >= 1.25 * max(trough, 1e-6) and peak >= 0.13 * attack
             if reattack:
-                # Prefer the flux peak so the MIDI attack matches the pluck.
                 cut = flux_t if flux >= env_floor else peak_t
                 if note.start + min_dur <= cut <= note.end - min_dur:
                     cuts.append(float(cut))
@@ -290,9 +289,10 @@ def split_repeats_on_meter(
                 dedup[-1] = cut
         if dedup[-1] != note.end:
             dedup.append(note.end)
+        parent: list[NoteEvent] = []
         for start, end in zip(dedup, dedup[1:]):
             if end - start >= min_dur:
-                out.append(
+                parent.append(
                     NoteEvent(
                         start=start,
                         end=end,
@@ -300,15 +300,54 @@ def split_repeats_on_meter(
                         amplitude=note.amplitude,
                     )
                 )
-            elif out and out[-1].pitch == note.pitch:
-                prev = out[-1]
-                out[-1] = NoteEvent(
+            elif parent:
+                prev = parent[-1]
+                parent[-1] = NoteEvent(
                     start=prev.start,
                     end=end,
                     pitch=prev.pitch,
                     amplitude=prev.amplitude,
                 )
+            elif end - start >= MIN_NOTE_DURATION_S:
+                parent.append(
+                    NoteEvent(
+                        start=start,
+                        end=end,
+                        pitch=note.pitch,
+                        amplitude=note.amplitude,
+                    )
+                )
+        out.extend(parent)
     return out
+
+
+def _seed_holes_at_onsets(
+    notes: list[NoteEvent],
+    onsets: np.ndarray,
+    tick: float,
+) -> list[NoteEvent]:
+    """If f0 dropped out between plucks, still put a note on the attack."""
+    if not notes:
+        return []
+    ordered = sorted(notes, key=lambda n: n.start)
+    extra: list[NoteEvent] = []
+    for onset in np.atleast_1d(onsets).astype(float):
+        covered = any(n.start - 0.02 <= onset < n.end for n in ordered)
+        if covered:
+            continue
+        nearest = min(
+            ordered,
+            key=lambda n: min(abs(n.start - onset), abs(n.end - onset)),
+        )
+        extra.append(
+            NoteEvent(
+                start=float(onset),
+                end=float(onset) + 0.85 * tick,
+                pitch=nearest.pitch,
+                amplitude=nearest.amplitude,
+            )
+        )
+    return sorted(ordered + extra, key=lambda n: n.start)
 
 
 def split_repeated_pitches(
@@ -319,10 +358,24 @@ def split_repeated_pitches(
     grid: str = "8",
     min_duration: float = MIN_NOTE_DURATION_S,
 ) -> list[NoteEvent]:
-    """Same-pitch repeats: audio onsets first, then meter-guided re-attacks."""
+    """Same-pitch repeats: grid-spaced audio onsets, then meter on long holds."""
+    from base_sheet.rhythm import seconds_per_tick
+
+    tick = seconds_per_tick(bpm, grid)
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
-    split = split_at_onsets(notes, onsets, min_duration=min_duration)
-    return split_repeats_on_meter(y, sr, split, bpm, grid)
+    onsets = _nms_times(onsets, max(0.12, 0.62 * tick))
+    split = _seed_holes_at_onsets(notes, onsets, tick)
+    split = split_at_onsets(split, onsets, min_duration=min_duration)
+    long: list[NoteEvent] = []
+    short: list[NoteEvent] = []
+    for note in split:
+        if note.duration >= 1.45 * tick:
+            long.append(note)
+        else:
+            short.append(note)
+    if long:
+        long = split_repeats_on_meter(y, sr, long, bpm, grid)
+    return sorted(short + long, key=lambda n: n.start)
 
 
 def stamp_amplitudes(
