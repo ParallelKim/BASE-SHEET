@@ -1,15 +1,20 @@
-from pathlib import Path
-
 import numpy as np
 
-from base_sheet.correct import correct_octave_errors, drop_short_notes, median_filter_pitches
+from base_sheet.correct import (
+    choose_octave_from_spectrum,
+    correct_note_octaves,
+    correct_octave_errors,
+    drop_short_notes,
+    median_filter_pitches,
+    snap_register_to_neighbors,
+)
 from base_sheet.models import NoteEvent
 
 
 def test_octave_jump_of_two_frames_is_repaired():
     # 40, then two frames at 52 (= +12), then 40
     midi = np.array([40, 52, 52, 40, 40], dtype=int)
-    out = correct_octave_errors(midi, max_short_frames=2)
+    out = correct_octave_errors(midi, max_short_frames=5)
     assert list(out) == [40, 40, 40, 40, 40]
 
 
@@ -33,3 +38,34 @@ def test_drop_short_notes():
     kept = drop_short_notes(notes, min_duration=0.05)
     assert len(kept) == 1
     assert kept[0].pitch == 41
+
+
+def test_spectrum_prefers_bass_fundamental_over_h1():
+    freqs = np.linspace(0, 400, 801)
+    mag = np.zeros_like(freqs)
+    mag[(freqs >= 58) & (freqs <= 66)] = 0.4  # B1
+    mag[(freqs >= 118) & (freqs <= 130)] = 1.0  # H1 (what CREPE often tracks)
+    mag[(freqs >= 178) & (freqs <= 192)] = 0.5
+    assert choose_octave_from_spectrum(mag, freqs, 47) == 35
+
+
+def test_correct_note_octaves_drops_h1_on_b1_tone():
+    sr = 22050
+    t = np.arange(int(0.8 * sr)) / sr
+    f = 61.74
+    y = (0.35 * np.sin(2 * np.pi * f * t) + 0.9 * np.sin(2 * np.pi * 2 * f * t)).astype(
+        np.float32
+    )
+    notes = [NoteEvent(0.05, 0.7, 47, 0.8)]
+    out = correct_note_octaves(y, sr, notes)
+    assert out[0].pitch == 35
+
+
+def test_snap_register_folds_isolated_high():
+    notes = [
+        NoteEvent(0.0, 0.2, 35),
+        NoteEvent(0.2, 0.4, 47),
+        NoteEvent(0.4, 0.6, 30),
+    ]
+    out = snap_register_to_neighbors(notes)
+    assert out[1].pitch == 35

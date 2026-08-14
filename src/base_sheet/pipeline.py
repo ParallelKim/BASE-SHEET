@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from base_sheet import listen, notate, rhythm, segment, transcribe
+from base_sheet import correct, listen, notate, rhythm, segment, transcribe
 from base_sheet.audio import load_mono
 from base_sheet.listen import ListenScore
 from base_sheet.models import MIN_NOTE_DURATION_S, NoteEvent, QuantizedNote
@@ -52,7 +52,11 @@ def run(
             path, y, int(sr), engine=engine, min_duration=min_duration
         )
     )
-    raw_notes = segment.split_repeats_on_meter(y, sr, raw_notes, used_bpm, grid)
+    raw_notes = correct.correct_note_octaves(y, sr, raw_notes)
+    raw_notes = segment.split_repeated_pitches(
+        y, sr, raw_notes, used_bpm, grid, min_duration=min_duration
+    )
+    raw_notes = correct.snap_register_to_neighbors(raw_notes)
     raw_notes = segment.stamp_amplitudes(y, sr, raw_notes)
     raw_notes = rhythm.make_monophonic(raw_notes)
 

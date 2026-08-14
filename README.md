@@ -28,7 +28,9 @@ python -m base_sheet path/to/bass.m4a -o ./out --bpm 96 --grid 16
 python -m base_sheet path/to/bass.m4a -o ./out --engine basic-pitch --snap-key --key "E minor"
 ```
 
-`.mid`는 음원 시간축 그대로인 **청취용 MIDI**입니다. 양자화한 악보 MIDI는 `.quant.mid`, 기보는 `.musicxml`입니다. Basic Pitch는 `--engine basic-pitch`로만 쓰세요. 단악기 스템에서도 박이 어긋나기 쉽습니다.
+기본 엔진은 **torchcrepe f0**(없으면 pYIN, 프레임을 E1 주기 기준으로 잡음) + CREPE Notes 분할입니다. 같은 음 반복은 저역 온셋과 박자 그리드의 RMS 재공격으로 쪼개고, 각 음의 옥타브는 스펙트럼의 f/2f로 다시 고릅니다. Basic Pitch는 `--engine basic-pitch`로만 쓰세요.
+
+`.mid`는 음원 시간축 MIDI, `.quant.mid`는 양자화, `.musicxml`은 기보입니다.
 
 분리가 덜 된 스템은 다른 악기 잔여가 음표로 붙을 수 있습니다. `--min-duration`을 키우거나 `--bpm`을 직접 넣으세요.
 

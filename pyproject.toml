@@ -34,5 +34,5 @@ testpaths = ["tests"]
 pythonpath = ["src", "tests"]
 addopts = "-m 'not slow'"
 markers = [
-    "slow: uses the real Antifreeze bass fixture (pYIN, tens of seconds)",
+    "slow: uses the real Antifreeze bass fixture (torchcrepe/pYIN)",
 ]

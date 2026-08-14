@@ -18,6 +18,7 @@ from base_sheet.models import (
 
 _BASS_FMIN_HZ = 41.2
 _BASS_FMAX_HZ = 392.0
+_CREPE_SR = 16000
 
 
 def _times_like(n_frames: int, sr: float, hop_length: int) -> np.ndarray:
@@ -26,23 +27,33 @@ def _times_like(n_frames: int, sr: float, hop_length: int) -> np.ndarray:
     return librosa.times_like(np.zeros(n_frames), sr=sr, hop_length=hop_length)
 
 
-def _f0_torchcrepe(y: np.ndarray, sr: int) -> tuple[np.ndarray, np.ndarray, int] | None:
+def _pyin_frame_length(sr: int) -> int:
+    """≥ ~4 periods of E1 so pYIN can track the bass fundamental."""
+    period = float(sr) / _BASS_FMIN_HZ
+    needed = max(2048, int(4.0 * period))
+    return int(2 ** np.ceil(np.log2(needed)))
+
+
+def _f0_torchcrepe(y: np.ndarray, sr: int) -> tuple[np.ndarray, np.ndarray, int, int] | None:
     try:
+        import librosa
         import torch
         import torchcrepe
     except ImportError:
         return None
 
-    hop = int(sr * 0.010)
-    audio = torch.tensor(y, dtype=torch.float32).unsqueeze(0)
+    if int(sr) != _CREPE_SR:
+        y = librosa.resample(np.asarray(y, dtype=float), orig_sr=int(sr), target_sr=_CREPE_SR)
+        sr = _CREPE_SR
+    hop = 160  # 10 ms at CREPE's native 16 kHz
+    audio = torch.tensor(np.asarray(y, dtype=np.float32), dtype=torch.float32).unsqueeze(0)
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda"
     elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
         device = "mps"
-    pitch, periodicity = torchcrepe.predict(
-        audio,
-        sr,
+    decoder = getattr(torchcrepe.decode, "viterbi", None)
+    kwargs = dict(
         hop_length=hop,
         fmin=_BASS_FMIN_HZ,
         fmax=_BASS_FMAX_HZ,
@@ -50,29 +61,36 @@ def _f0_torchcrepe(y: np.ndarray, sr: int) -> tuple[np.ndarray, np.ndarray, int]
         return_periodicity=True,
         device=device,
         batch_size=2048,
+        pad=True,
     )
+    if decoder is not None:
+        kwargs["decoder"] = decoder
+    pitch, periodicity = torchcrepe.predict(audio, sr, **kwargs)
     pitch_np = pitch.detach().cpu().numpy().reshape(-1)
     per_np = periodicity.detach().cpu().numpy().reshape(-1)
     import scipy.ndimage
 
     per_np = scipy.ndimage.median_filter(per_np, size=3)
-    return pitch_np, per_np, hop
+    pitch_np[~np.isfinite(pitch_np)] = 0.0
+    return pitch_np, per_np, hop, sr
 
 
-def _f0_pyin(y: np.ndarray, sr: int) -> tuple[np.ndarray, np.ndarray, int]:
+def _f0_pyin(y: np.ndarray, sr: int) -> tuple[np.ndarray, np.ndarray, int, int]:
     import librosa
 
-    hop = 512
+    hop = 256
+    frame_length = _pyin_frame_length(int(sr))
     f0, _voiced_flag, voiced_probs = librosa.pyin(
         y,
         fmin=_BASS_FMIN_HZ,
         fmax=_BASS_FMAX_HZ,
         sr=sr,
         hop_length=hop,
+        frame_length=frame_length,
         fill_na=np.nan,
     )
     conf = np.nan_to_num(np.asarray(voiced_probs, dtype=float), nan=0.0)
-    return np.asarray(f0, dtype=float), conf, hop
+    return np.asarray(f0, dtype=float), conf, hop, int(sr)
 
 
 def transcribe_crepe(
@@ -84,34 +102,26 @@ def transcribe_crepe(
     """CREPE Notes segmentation on a torchcrepe or pYIN contour."""
     import librosa
 
-    target_sr = 22050
-    if int(sr) != target_sr:
-        y = librosa.resample(y, orig_sr=int(sr), target_sr=target_sr)
-        sr = target_sr
-
     packed = _f0_torchcrepe(y, int(sr))
     if packed is None:
-        f0_hz, confidence, hop = _f0_pyin(y, int(sr))
+        target_sr = 22050
+        y_f0 = y
+        f0_sr = int(sr)
+        if f0_sr != target_sr:
+            y_f0 = librosa.resample(y, orig_sr=f0_sr, target_sr=target_sr)
+            f0_sr = target_sr
+        f0_hz, confidence, hop, used_sr = _f0_pyin(y_f0, f0_sr)
         floor = 0.10
     else:
-        f0_hz, confidence, hop = packed
+        f0_hz, confidence, hop, used_sr = packed
         floor = CREPE_PERIODICITY_FLOOR
 
     midi = np.full(f0_hz.shape, UNVOICED, dtype=int)
     valid = np.isfinite(f0_hz) & (f0_hz > 0)
     midi[valid] = np.rint(librosa.hz_to_midi(f0_hz[valid])).astype(int)
     midi = correct.correct_contour(midi, confidence, confidence_floor=floor)
-    times = _times_like(len(midi), float(sr), hop)
-    rms = librosa.feature.rms(y=y, hop_length=hop)[0]
-    if len(rms) < len(midi):
-        rms = np.pad(rms, (0, len(midi) - len(rms)))
-    rms = rms[: len(midi)]
-    peak = float(np.percentile(rms, 95) + 1e-9)
-    amps = np.clip(rms / peak, 0.05, 1.0)
-
-    notes = segment.contour_to_notes(
-        midi, confidence, times, min_duration=min_duration, amplitudes=amps
-    )
+    times = _times_like(len(midi), float(used_sr), hop)
+    notes = segment.contour_to_notes(midi, confidence, times, min_duration=min_duration)
     return correct.drop_short_notes(notes, min_duration)
 
 

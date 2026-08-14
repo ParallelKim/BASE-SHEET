@@ -110,20 +110,64 @@ def contour_to_notes(
     return notes
 
 
-def detect_onsets(y: np.ndarray, sr: int | float) -> np.ndarray:
-    """Onsets for repeated same-pitch notes. madmom if present, else librosa."""
+def _nms_times(times: np.ndarray, min_gap: float) -> np.ndarray:
+    if times.size == 0:
+        return times.astype(float)
+    ordered = np.sort(np.asarray(times, dtype=float))
+    kept = [float(ordered[0])]
+    for t in ordered[1:]:
+        if t - kept[-1] >= min_gap:
+            kept.append(float(t))
+    return np.asarray(kept, dtype=float)
+
+
+def detect_bass_onsets(
+    y: np.ndarray,
+    sr: int | float,
+    bpm: float | None = None,
+) -> np.ndarray:
+    """Pluck onsets from low-mid spectral flux, plus madmom if installed.
+
+    Rock bass repeats the same pitch; f0 gradient is ~0, so this detector
+    is what actually finds the 8th-note attacks.
+    """
+    import librosa
+
+    hop = 256
+    n_fft = 2048
+    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=n_fft, hop_length=hop))
+    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=n_fft)
+    band = (freqs >= 50.0) & (freqs <= 1800.0)
+    env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
+    wait = 1
+    if bpm is not None and bpm > 0:
+        # Allow 16ths; suppress double-triggers closer than ~40 ms.
+        wait = max(1, int((60.0 / float(bpm) / 8.0) * float(sr) / hop * 0.45))
+    times = librosa.onset.onset_detect(
+        onset_envelope=env,
+        sr=float(sr),
+        hop_length=hop,
+        units="time",
+        backtrack=True,
+        delta=0.05,
+        wait=wait,
+    )
+    extra: list[float] = []
     try:
         from madmom.features.onsets import CNNOnsetProcessor, peak_picking
 
         proc = CNNOnsetProcessor()
         act = proc(y)
-        fps = 100
-        peaks = peak_picking(act, threshold=0.5, smooth=None)
-        return np.asarray(peaks, dtype=float) / float(fps)
+        extra = [float(p) / 100.0 for p in peak_picking(act, threshold=0.45, smooth=None)]
     except Exception:
-        import librosa
+        extra = []
+    merged = np.concatenate([np.atleast_1d(times).astype(float), np.asarray(extra, dtype=float)])
+    return _nms_times(merged, 0.04)
 
-        return librosa.onset.onset_detect(y=y, sr=sr, units="time", backtrack=True)
+
+def detect_onsets(y: np.ndarray, sr: int | float) -> np.ndarray:
+    """Onsets for repeated same-pitch notes."""
+    return detect_bass_onsets(y, sr)
 
 
 def split_at_onsets(
@@ -173,42 +217,69 @@ def split_repeats_on_meter(
 
     Same-pitch eighths have ~0 f0 gradient, so contour segmentation cannot
     see them. A decaying whole note has one attack; repeated 8ths re-peak
-    near each grid tick at a large fraction of that attack.
+    near each grid tick. Cut times snap to the local onset-envelope peak so
+    the MIDI attack matches the stem, not the metronome.
     """
     import librosa
 
     from base_sheet.rhythm import seconds_per_tick
 
+    del peak_ratio
     if not notes:
         return []
     hop = 256
-    rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=hop * 4)[0]
-    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=512)[0]
+    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=2048, hop_length=hop))
+    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=2048)
+    band = (freqs >= 50.0) & (freqs <= 1800.0)
+    onset_env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
+    n_frames = min(len(rms), len(onset_env), spec.shape[1])
+    rms = rms[:n_frames]
+    onset_env = onset_env[:n_frames]
+    times = librosa.frames_to_time(np.arange(n_frames), sr=sr, hop_length=hop)
     tick = seconds_per_tick(bpm, grid)
     min_dur = max(0.05, 0.55 * tick)
     half = 0.5 * tick
-    win = min(0.08, 0.35 * tick)
+    win = min(0.07, 0.28 * tick)
 
-    def env_near(t: float) -> float:
-        if len(rms) == 0:
-            return 0.0
+    def _max_near(arr: np.ndarray, t: float) -> tuple[float, float]:
+        if arr.size == 0:
+            return 0.0, t
         mask = (times >= t - win) & (times <= t + win)
         if not np.any(mask):
-            idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
-            return float(rms[idx])
-        return float(np.max(rms[mask]))
+            idx = int(np.clip(np.searchsorted(times, t), 0, len(arr) - 1))
+            return float(arr[idx]), float(times[idx])
+        local = arr[mask]
+        local_t = times[mask]
+        k = int(np.argmax(local))
+        return float(local[k]), float(local_t[k])
+
+    def _at(arr: np.ndarray, t: float) -> float:
+        if arr.size == 0:
+            return 0.0
+        idx = int(np.clip(np.searchsorted(times, t), 0, len(arr) - 1))
+        return float(arr[idx])
+
+    def rms_near(t: float) -> float:
+        return _max_near(rms, t)[0]
 
     out: list[NoteEvent] = []
     for note in notes:
-        attack = max(env_near(note.start), env_near(note.start + 0.02), 1e-6)
+        attack = max(rms_near(note.start), rms_near(note.start + 0.02), 1e-6)
+        note_mask = (times >= note.start) & (times < note.end)
+        env_floor = float(np.percentile(onset_env[note_mask], 55)) if np.any(note_mask) else 0.0
         cuts = [note.start]
         t = note.start + tick
         while t <= note.end - min_dur + 1e-9:
-            peak = env_near(t)
-            trough = env_near(t - half)
-            reattack = peak >= 1.12 * max(trough, 1e-6) and peak >= 0.15 * attack
+            peak, peak_t = _max_near(rms, t)
+            flux, flux_t = _max_near(onset_env, t)
+            trough = _at(rms, t - half)
+            reattack = peak >= 1.25 * max(trough, 1e-6) and peak >= 0.13 * attack
             if reattack:
-                cuts.append(float(t))
+                # Prefer the flux peak so the MIDI attack matches the pluck.
+                cut = flux_t if flux >= env_floor else peak_t
+                if note.start + min_dur <= cut <= note.end - min_dur:
+                    cuts.append(float(cut))
             t += tick
         cuts.append(note.end)
         dedup: list[float] = []
@@ -238,6 +309,20 @@ def split_repeats_on_meter(
                     amplitude=prev.amplitude,
                 )
     return out
+
+
+def split_repeated_pitches(
+    y: np.ndarray,
+    sr: int | float,
+    notes: list[NoteEvent],
+    bpm: float,
+    grid: str = "8",
+    min_duration: float = MIN_NOTE_DURATION_S,
+) -> list[NoteEvent]:
+    """Same-pitch repeats: audio onsets first, then meter-guided re-attacks."""
+    onsets = detect_bass_onsets(y, sr, bpm=bpm)
+    split = split_at_onsets(notes, onsets, min_duration=min_duration)
+    return split_repeats_on_meter(y, sr, split, bpm, grid)
 
 
 def stamp_amplitudes(

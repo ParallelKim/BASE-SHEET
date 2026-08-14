@@ -25,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--engine",
         default="crepe",
         choices=["crepe", "basic-pitch"],
-        help="crepe = pYIN/torchcrepe + CREPE Notes split (default)",
+        help="crepe = torchcrepe (or pYIN) f0 + CREPE Notes (default)",
     )
     parser.add_argument("--bpm", type=float, default=None, help="Skip tempo voting")
     parser.add_argument("--time-signature", default="4/4")
@@ -73,8 +73,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Time signature: {result.time_signature}")
     print(f"Key: {result.key}")
     print(f"Notes: {result.note_count}")
-    print(f"Wrote (listen MIDI): {result.midi_path}")
-    print(f"Wrote (quantized MIDI): {result.quantized_midi_path}")
+    print(f"Wrote: {result.midi_path}")
+    print(f"Wrote: {result.quantized_midi_path}")
     print(f"Wrote: {result.musicxml_path}")
     if result.listen is not None:
         print(

@@ -1,7 +1,12 @@
 import numpy as np
 
 from base_sheet.models import NoteEvent
-from base_sheet.segment import split_at_onsets, split_repeats_on_meter
+from base_sheet.segment import (
+    detect_bass_onsets,
+    split_at_onsets,
+    split_repeated_pitches,
+    split_repeats_on_meter,
+)
 
 
 def test_same_pitch_splits_on_interior_onset():
@@ -49,3 +54,22 @@ def test_meter_split_keeps_single_decay():
     held = [NoteEvent(start=0.0, end=2.0, pitch=35, amplitude=0.8)]
     out = split_repeats_on_meter(y, sr, held, bpm=120.0, grid="8")
     assert len(out) <= 3
+
+
+def test_pluck_train_onsets_near_eighths():
+    sr = 22050
+    bpm = 120.0
+    eighth = 0.25
+    y = _pluck_train(16, eighth, sr, freq=61.74)
+    onsets = detect_bass_onsets(y, sr, bpm=bpm)
+    assert 10 <= len(onsets) <= 22
+
+
+def test_split_repeated_pitches_uses_onsets_then_meter():
+    sr = 22050
+    bpm = 120.0
+    eighth = 0.25
+    y = _pluck_train(16, eighth, sr, freq=61.74)
+    held = [NoteEvent(start=0.0, end=4.0, pitch=35, amplitude=0.8)]
+    out = split_repeated_pitches(y, sr, held, bpm, grid="8")
+    assert 12 <= len(out) <= 20
