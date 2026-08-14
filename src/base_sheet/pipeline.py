@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from base_sheet import correct, listen, notate, rhythm, segment, transcribe
+from base_sheet import correct, listen, notate, preview, rhythm, segment, transcribe
 from base_sheet.audio import load_mono
 from base_sheet.listen import ListenScore
 from base_sheet.models import MIN_NOTE_DURATION_S, NoteEvent, QuantizedNote
@@ -21,6 +21,8 @@ class PipelineResult:
     midi_path: Path
     quantized_midi_path: Path
     musicxml_path: Path
+    preview_path: Path | None
+    compare_path: Path | None
     notes: list[QuantizedNote]
     performed: list[NoteEvent]
     listen: ListenScore | None
@@ -38,6 +40,7 @@ def run(
     snap_key: bool = False,
     min_duration: float = MIN_NOTE_DURATION_S,
     events: list[NoteEvent] | None = None,
+    write_preview: bool = True,
 ) -> PipelineResult:
     path = Path(audio_path)
     if not path.is_file():
@@ -85,6 +88,12 @@ def run(
         str(rhythm.parse_key_string(key_hint)) if key_hint else notate.key_name(written["score"])
     )
     listen_score = listen.score_listen(y, sr, raw_notes)
+    preview_path = None
+    compare_path = None
+    if write_preview:
+        wavs = preview.write_previews(y, int(sr), raw_notes, out, path.stem)
+        preview_path = wavs["preview"]
+        compare_path = wavs["compare"]
     return PipelineResult(
         bpm=used_bpm,
         time_signature=time_signature,
@@ -94,6 +103,8 @@ def run(
         midi_path=midi_path,
         quantized_midi_path=written["midi"],
         musicxml_path=written["musicxml"],
+        preview_path=preview_path,
+        compare_path=compare_path,
         notes=quantized,
         performed=raw_notes,
         listen=listen_score,

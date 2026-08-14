@@ -47,6 +47,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=MIN_NOTE_DURATION_S,
         help="Drop notes shorter than this many seconds (default 0.05)",
     )
+    parser.add_argument(
+        "--no-preview",
+        action="store_true",
+        help="Skip WAV preview / stem-vs-MIDI compare files",
+    )
     return parser
 
 
@@ -63,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
             key=args.key,
             snap_key=args.snap_key,
             min_duration=args.min_duration,
+            write_preview=not args.no_preview,
         )
     except Exception as exc:  # noqa: BLE001
         print(f"error: {exc}", file=sys.stderr)
@@ -76,6 +82,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Wrote: {result.midi_path}")
     print(f"Wrote: {result.quantized_midi_path}")
     print(f"Wrote: {result.musicxml_path}")
+    if result.preview_path is not None:
+        print(f"Wrote: {result.preview_path}  (MIDI synth — listen here)")
+    if result.compare_path is not None:
+        print(f"Wrote: {result.compare_path}  (L=stem, R=MIDI)")
     if result.listen is not None:
         print(
             f"Listen vs stem: pitch±1={result.listen.pitch_within_semitone:.1%} "

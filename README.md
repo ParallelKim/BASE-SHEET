@@ -30,7 +30,21 @@ python -m base_sheet path/to/bass.m4a -o ./out --engine basic-pitch --snap-key -
 
 기본 엔진은 **torchcrepe f0**(없으면 pYIN, 프레임을 E1 주기 기준으로 잡음) + CREPE Notes 분할입니다. 같은 음 반복은 저역 온셋과 박자 그리드의 RMS 재공격으로 쪼개고, 각 음의 옥타브는 스펙트럼의 f/2f로 다시 고릅니다. Basic Pitch는 `--engine basic-pitch`로만 쓰세요.
 
-`.mid`는 음원 시간축 MIDI, `.quant.mid`는 양자화, `.musicxml`은 기보입니다.
+`.mid`는 음원 시간축 MIDI, `.quant.mid`는 양자화, `.musicxml`은 기보입니다. 같이 `.preview.wav`(MIDI를 베이스 톤으로 합성)와 `.compare.wav`(왼쪽=스템, 오른쪽=MIDI)가 나옵니다.
+
+## 결과 확인
+
+**듣기** — 스템과 같은지 보려면 `.compare.wav`를 헤드폰으로 재생하세요. 왼쪽이 원본 베이스, 오른쪽이 분석 MIDI입니다. MIDI만 들으려면 `.preview.wav` 또는 DAW/VLC에 `.mid`를 넣으세요. (GM 일렉트릭 베이스, 프로그램 33)
+
+**악보** — `.musicxml`을 [MuseScore](https://musescore.org/)에서 엽니다. GarageBand/Logic/Guitar Pro도 MusicXML·MIDI를 읽습니다. 출판 탭과 비교할 때는 양자화 파일(`.quant.mid`, `.musicxml`)을 보세요. 스템과 음이 같은지는 양자화 전 `.mid` / `.preview.wav`가 맞습니다.
+
+```bash
+python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out --bpm 128 --grid 8 --key F#
+# out/Antifreeze_bass_mixed.preview.wav
+# out/Antifreeze_bass_mixed.compare.wav   ← L=stem R=MIDI
+# out/Antifreeze_bass_mixed.musicxml      ← MuseScore
+```
+
 
 분리가 덜 된 스템은 다른 악기 잔여가 음표로 붙을 수 있습니다. `--min-duration`을 키우거나 `--bpm`을 직접 넣으세요.
 
@@ -56,3 +70,4 @@ pytest -m slow
 | `--key` | 추정 | 예: `F#`, `Em` |
 | `--snap-key` | off | 조성에 피치 스냅 (E 제자리표 곡은 끄기) |
 | `--min-duration` | 0.05 | 짧은 음 제거(초) |
+| `--no-preview` | off | WAV 미리듣기/비교 생략 |
