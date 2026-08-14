@@ -71,12 +71,44 @@ def test_snap_register_folds_isolated_high():
     assert out[1].pitch == 35
 
 
-def test_snap_register_folds_fsharp2_among_bass_roots():
+def test_spectrum_prefers_e1_over_h1_e2():
+    freqs = np.linspace(0, 400, 801)
+    mag = np.zeros_like(freqs)
+    mag[(freqs >= 38) & (freqs <= 46)] = 0.25  # E1, weaker than H1
+    mag[(freqs >= 78) & (freqs <= 88)] = 1.0
+    mag[(freqs >= 118) & (freqs <= 130)] = 0.45
+    assert choose_octave_from_spectrum(mag, freqs, 40) == 28
+
+
+def test_spectrum_prefers_fsharp1_over_h1():
+    freqs = np.linspace(0, 400, 801)
+    mag = np.zeros_like(freqs)
+    mag[(freqs >= 42) & (freqs <= 52)] = 0.22
+    mag[(freqs >= 86) & (freqs <= 100)] = 1.0
+    mag[(freqs >= 132) & (freqs <= 148)] = 0.4
+    assert choose_octave_from_spectrum(mag, freqs, 42) == 30
+
+
+def test_pure_e2_sine_keeps_e2():
+    sr = 22050
+    t = np.arange(int(0.8 * sr)) / sr
+    y = (0.7 * np.sin(2 * np.pi * 82.41 * t)).astype(np.float32)
+    notes = [NoteEvent(0.05, 0.7, 40, 0.8)]
+    out = correct_note_octaves(y, sr, notes)
+    assert out[0].pitch == 40
+
+
+def test_snap_register_folds_e2_when_low_register_present():
     notes = [
-        NoteEvent(0.0, 0.2, 35),
-        NoteEvent(0.2, 0.4, 42),
-        NoteEvent(0.4, 0.6, 30),
-        NoteEvent(0.6, 0.8, 28),
+        NoteEvent(0.0, 0.2, 33),
+        NoteEvent(0.2, 0.4, 38),
+        NoteEvent(0.4, 0.6, 40),
+        NoteEvent(0.6, 0.8, 35),
+        NoteEvent(0.8, 1.0, 33),
+        NoteEvent(1.0, 1.2, 38),
+        NoteEvent(1.2, 1.4, 42),
+        NoteEvent(1.4, 1.6, 35),
     ]
     out = snap_register_to_neighbors(notes)
-    assert out[1].pitch == 30
+    assert out[2].pitch == 28
+    assert out[6].pitch == 30

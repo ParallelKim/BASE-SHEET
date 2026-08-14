@@ -149,7 +149,7 @@ def detect_bass_onsets(
         hop_length=hop,
         units="time",
         backtrack=True,
-        delta=0.05,
+        delta=0.07,
         wait=wait,
     )
     extra: list[float] = []
@@ -331,9 +331,16 @@ def _seed_holes_at_onsets(
         return []
     ordered = sorted(notes, key=lambda n: n.start)
     extra: list[NoteEvent] = []
+    min_hole = 0.45 * tick
     for onset in np.atleast_1d(onsets).astype(float):
         covered = any(n.start - 0.02 <= onset < n.end for n in ordered)
         if covered:
+            continue
+        prev = [n for n in ordered if n.end <= onset + 1e-6]
+        nxt = [n for n in ordered if n.start >= onset - 1e-6]
+        gap_start = prev[-1].end if prev else onset - tick
+        gap_end = nxt[0].start if nxt else onset + tick
+        if gap_end - gap_start < min_hole:
             continue
         nearest = min(
             ordered,
@@ -342,12 +349,48 @@ def _seed_holes_at_onsets(
         extra.append(
             NoteEvent(
                 start=float(onset),
-                end=float(onset) + 0.85 * tick,
+                end=min(float(onset) + 0.85 * tick, gap_end),
                 pitch=nearest.pitch,
                 amplitude=nearest.amplitude,
             )
         )
     return sorted(ordered + extra, key=lambda n: n.start)
+
+
+def _confirmed_reattacks(
+    y: np.ndarray,
+    sr: int | float,
+    onsets: np.ndarray,
+    tick: float,
+) -> np.ndarray:
+    """Keep onsets that actually re-peak in RMS (plucks), drop sustain wobble."""
+    import librosa
+
+    if onsets.size == 0:
+        return onsets
+    hop = 256
+    rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=512)[0]
+    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    half = 0.45 * tick
+    win = min(0.06, 0.25 * tick)
+
+    def at(t: float) -> float:
+        idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
+        return float(rms[idx])
+
+    def peak_near(t: float) -> float:
+        mask = (times >= t - win) & (times <= t + win)
+        if not np.any(mask):
+            return at(t)
+        return float(np.max(rms[mask]))
+
+    kept: list[float] = []
+    for onset in np.atleast_1d(onsets).astype(float):
+        peak = peak_near(onset)
+        trough = at(onset - half)
+        if peak >= 1.22 * max(trough, 1e-6):
+            kept.append(float(onset))
+    return np.asarray(kept, dtype=float)
 
 
 def split_repeated_pitches(
@@ -358,12 +401,13 @@ def split_repeated_pitches(
     grid: str = "8",
     min_duration: float = MIN_NOTE_DURATION_S,
 ) -> list[NoteEvent]:
-    """Same-pitch repeats: grid-spaced audio onsets, then meter on long holds."""
+    """Same-pitch repeats: confirmed pluck onsets, then meter on long holds."""
     from base_sheet.rhythm import seconds_per_tick
 
     tick = seconds_per_tick(bpm, grid)
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
     onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
+    onsets = _confirmed_reattacks(y, sr, onsets, tick)
     split = _seed_holes_at_onsets(notes, onsets, tick)
     split = split_at_onsets(split, onsets, min_duration=min_duration)
     long: list[NoteEvent] = []

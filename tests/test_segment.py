@@ -73,3 +73,13 @@ def test_split_repeated_pitches_uses_onsets_then_meter():
     held = [NoteEvent(start=0.0, end=4.0, pitch=35, amplitude=0.8)]
     out = split_repeated_pitches(y, sr, held, bpm, grid="8")
     assert 12 <= len(out) <= 20
+
+
+def test_split_repeated_pitches_keeps_sustained_tone():
+    sr = 22050
+    n = int(2.5 * sr)
+    t = np.arange(n) / sr
+    y = (0.5 * np.sin(2 * np.pi * 46.25 * t) * np.exp(-t * 0.6)).astype(np.float32)
+    held = [NoteEvent(start=0.0, end=2.5, pitch=30, amplitude=0.8)]
+    out = split_repeated_pitches(y, sr, held, bpm=84.0, grid="8")
+    assert len(out) <= 4

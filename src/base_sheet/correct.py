@@ -18,9 +18,6 @@ from base_sheet.models import (
     NoteEvent,
 )
 
-# Typical rock/pop 4-string register (E1–C3). Above this, +12 is often H1.
-_TYPICAL_BASS_HIGH = 48
-
 
 def fold_to_bass_range(
     midi_pitch: int,
@@ -119,9 +116,12 @@ def correct_contour(
     return midi
 
 
-def _band_energy(mag: np.ndarray, freqs: np.ndarray, hz: float, rel_bw: float = 0.08) -> float:
+def _band_energy(mag: np.ndarray, freqs: np.ndarray, hz: float, rel_bw: float | None = None) -> float:
     if hz <= 0 or mag.size == 0:
         return 0.0
+    # E1–F#1 sit in few STFT bins; a wider band is required to see the fundamental.
+    if rel_bw is None:
+        rel_bw = 0.16 if hz < 80.0 else 0.08
     lo, hi = hz * (1.0 - rel_bw), hz * (1.0 + rel_bw)
     mask = (freqs >= lo) & (freqs <= hi)
     if not np.any(mask):
@@ -136,9 +136,12 @@ def _harmonic_score(mag: np.ndarray, freqs: np.ndarray, midi_pitch: int) -> floa
     e1 = _band_energy(mag, freqs, f0)
     e2 = _band_energy(mag, freqs, 2.0 * f0)
     e3 = _band_energy(mag, freqs, 3.0 * f0)
-    score = e1 + 0.55 * e2 + 0.35 * e3
-    if midi_pitch <= _TYPICAL_BASS_HIGH:
-        score *= 1.12
+    # Log so a weak bass fundamental can still beat a loud H1.
+    score = float(np.log(e1 + 1e-8) + 0.65 * np.log(e2 + 1e-8) + 0.35 * np.log(e3 + 1e-8))
+    if 28 <= midi_pitch <= 38:
+        score += 0.55
+    elif midi_pitch >= 40:
+        score -= 0.25
     return score
 
 
@@ -147,26 +150,37 @@ def choose_octave_from_spectrum(
     freqs: np.ndarray,
     midi_pitch: int,
 ) -> int:
-    """Pick f0 vs ±12 using harmonic-series energy in a magnitude spectrum."""
+    """Pick f0 vs ±12.
+
+    CREPE often reports H1. A real lower bass note still has odd harmonics
+    (3f, 5f) and sometimes a weak fundamental; a pure higher note does not.
+    """
+    import librosa
+
     folded = fold_to_bass_range(int(midi_pitch))
     if folded is None:
         return int(midi_pitch)
-    candidates = [folded]
-    if folded - 12 >= BASS_MIDI_MIN:
-        candidates.append(folded - 12)
-    if folded + 12 <= BASS_MIDI_MAX:
-        candidates.append(folded + 12)
-    scored = [(_harmonic_score(mag, freqs, p), -abs(p - 36), p) for p in candidates]
-    # CREPE often locks onto H1; if the sub-octave has real energy, prefer it.
-    tracked = folded
     lower = folded - 12
-    if lower >= BASS_MIDI_MIN:
-        import librosa
-
-        e_low = _band_energy(mag, freqs, float(librosa.midi_to_hz(lower)))
-        e_trk = _band_energy(mag, freqs, float(librosa.midi_to_hz(tracked)))
-        if e_low >= 0.18 * max(e_trk, 1e-9) and tracked >= 40:
-            scored = [(s + (4.0 if p == lower else 0.0), d, p) for s, d, p in scored]
+    if lower < BASS_MIDI_MIN:
+        return folded
+    f_hi = float(librosa.midi_to_hz(folded))
+    f_lo = float(librosa.midi_to_hz(lower))
+    e_lo = _band_energy(mag, freqs, f_lo)
+    e_hi = _band_energy(mag, freqs, f_hi)
+    e3_lo = _band_energy(mag, freqs, 3.0 * f_lo)
+    e5_lo = _band_energy(mag, freqs, 5.0 * f_lo)
+    peak = max(e_hi, 1e-9)
+    has_f0 = e_lo >= 0.07 * peak
+    has_odd = (e3_lo + 0.5 * e5_lo) >= 0.12 * peak
+    if folded >= 40 and (has_f0 or has_odd):
+        return lower
+    if folded >= 40:
+        return folded
+    scored = [
+        (_harmonic_score(mag, freqs, p), -abs(p - 33), p)
+        for p in (folded, lower)
+        if p >= BASS_MIDI_MIN
+    ]
     return max(scored)[2]
 
 
@@ -181,7 +195,7 @@ def correct_note_octaves(
     if not notes:
         return []
     hop = 512
-    n_fft = 4096
+    n_fft = 8192
     stft = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop))
     freqs = librosa.fft_frequencies(sr=float(sr), n_fft=n_fft)
     times = librosa.frames_to_time(np.arange(stft.shape[1]), sr=sr, hop_length=hop)
@@ -203,29 +217,46 @@ def correct_note_octaves(
 
 
 def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) -> list[NoteEvent]:
-    """Fold isolated highs that sit an octave above nearby bass notes."""
+    """Fold highs toward the open-string register, not toward a wrong-octave median.
+
+    If CREPE tracks H1 for a whole track, the global median is already +12 and
+    must not be used as the register anchor.
+    """
     if not notes:
         return []
     ordered = sorted(notes, key=lambda n: n.start)
     pitches = np.array([n.pitch for n in ordered], dtype=int)
     starts = np.array([n.start for n in ordered], dtype=float)
-    global_med = float(np.median(pitches)) if pitches.size else 36.0
+    low = pitches[(pitches >= BASS_MIDI_MIN) & (pitches <= 39)]
+    low_med = None
+    if low.size >= max(6, int(0.12 * pitches.size)):
+        low_med = float(np.median(low))
     out: list[NoteEvent] = []
-    for i, note in enumerate(ordered):
+    for note in ordered:
         local = pitches[np.abs(starts - note.start) <= window_s]
         if local.size == 0:
             out.append(note)
             continue
-        refs = [float(np.median(local)), global_med]
+        refs = [float(np.median(local))]
+        if low_med is not None:
+            refs.append(low_med)
         pitch = int(note.pitch)
+        lowered = pitch - 12
+        if (
+            low_med is not None
+            and pitch >= 40
+            and lowered >= BASS_MIDI_MIN
+            and abs(lowered - low_med) <= abs(pitch - low_med) + 2.0
+        ):
+            pitch = lowered
         changed = True
         while changed:
             changed = False
-            lowered = pitch - 12
-            if lowered < BASS_MIDI_MIN:
+            next_low = pitch - 12
+            if next_low < BASS_MIDI_MIN:
                 break
-            if any(abs(lowered - ref) + 1.5 < abs(pitch - ref) for ref in refs):
-                pitch = lowered
+            if any(abs(next_low - ref) + 1.5 < abs(pitch - ref) for ref in refs):
+                pitch = next_low
                 changed = True
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
