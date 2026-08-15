@@ -3,6 +3,7 @@ import numpy as np
 from base_sheet.models import NoteEvent
 from base_sheet.segment import (
     detect_bass_onsets,
+    merge_unconfirmed_repeats,
     split_at_onsets,
     split_repeated_pitches,
     split_repeats_on_meter,
@@ -83,3 +84,22 @@ def test_split_repeated_pitches_keeps_sustained_tone():
     held = [NoteEvent(start=0.0, end=2.5, pitch=30, amplitude=0.8)]
     out = split_repeated_pitches(y, sr, held, bpm=84.0, grid="8")
     assert len(out) <= 4
+
+
+def test_merge_glues_same_pitch_wobble_not_real_plucks():
+    sr = 22050
+    n = int(2.0 * sr)
+    t = np.arange(n) / sr
+    y = (0.5 * np.sin(2 * np.pi * 61.74 * t) * np.exp(-t * 0.8)).astype(np.float32)
+    notes = [NoteEvent(0.0, 0.9, 35), NoteEvent(0.9, 1.8, 35)]
+    from base_sheet.rhythm import seconds_per_tick
+
+    out = merge_unconfirmed_repeats(y, sr, notes, seconds_per_tick(120.0, "8"))
+    assert len(out) == 1
+    assert out[0].start == 0.0 and out[0].end == 1.8
+
+    eighth = 0.25
+    plucks = _pluck_train(8, eighth, sr, freq=61.74)
+    repeated = [NoteEvent(i * eighth, (i + 1) * eighth, 35) for i in range(8)]
+    kept = merge_unconfirmed_repeats(plucks, sr, repeated, eighth)
+    assert len(kept) >= 6

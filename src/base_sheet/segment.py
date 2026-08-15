@@ -274,7 +274,7 @@ def split_repeats_on_meter(
             peak, peak_t = _max_near(rms, t)
             flux, flux_t = _max_near(onset_env, t)
             trough = _at(rms, t - half)
-            reattack = peak >= 1.25 * max(trough, 1e-6) and peak >= 0.13 * attack
+            reattack = peak >= 1.38 * max(trough, 1e-6) and peak >= 0.20 * attack
             if reattack:
                 cut = flux_t if flux >= env_floor else peak_t
                 if note.start + min_dur <= cut <= note.end - min_dur:
@@ -388,9 +388,64 @@ def _confirmed_reattacks(
     for onset in np.atleast_1d(onsets).astype(float):
         peak = peak_near(onset)
         trough = at(onset - half)
-        if peak >= 1.22 * max(trough, 1e-6):
+        if peak >= 1.38 * max(trough, 1e-6):
             kept.append(float(onset))
     return np.asarray(kept, dtype=float)
+
+
+def merge_unconfirmed_repeats(
+    y: np.ndarray,
+    sr: int | float,
+    notes: list[NoteEvent],
+    tick: float,
+    *,
+    ratio: float = 1.38,
+    max_gap: float = 0.06,
+) -> list[NoteEvent]:
+    """Glue same-pitch fragments that were cut on envelope wobble, not a pluck.
+
+    Over-segmentation shows up as extra onsets *inside* a ground-truth note.
+    Real repeated 8ths still have an RMS re-peak at the join, so they stay split.
+    """
+    import librosa
+
+    if len(notes) < 2:
+        return list(notes)
+    hop = 256
+    rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=512)[0]
+    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    half = 0.45 * tick
+    win = min(0.06, 0.25 * tick)
+
+    def at(t: float) -> float:
+        idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
+        return float(rms[idx])
+
+    def peak_near(t: float) -> float:
+        mask = (times >= t - win) & (times <= t + win)
+        if not np.any(mask):
+            return at(t)
+        return float(np.max(rms[mask]))
+
+    def is_pluck(t: float) -> bool:
+        return peak_near(t) >= ratio * max(at(t - half), 1e-6)
+
+    ordered = sorted(notes, key=lambda n: n.start)
+    merged: list[NoteEvent] = [ordered[0]]
+    for note in ordered[1:]:
+        prev = merged[-1]
+        gap = note.start - prev.end
+        same = note.pitch == prev.pitch
+        if same and gap <= max_gap and not is_pluck(note.start):
+            merged[-1] = NoteEvent(
+                start=prev.start,
+                end=max(prev.end, note.end),
+                pitch=prev.pitch,
+                amplitude=max(prev.amplitude, note.amplitude),
+            )
+        else:
+            merged.append(note)
+    return merged
 
 
 def split_repeated_pitches(
@@ -406,20 +461,21 @@ def split_repeated_pitches(
 
     tick = seconds_per_tick(bpm, grid)
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
-    onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
+    onsets = _nms_times(onsets, max(0.16, 0.80 * tick))
     onsets = _confirmed_reattacks(y, sr, onsets, tick)
     split = _seed_holes_at_onsets(notes, onsets, tick)
     split = split_at_onsets(split, onsets, min_duration=min_duration)
     long: list[NoteEvent] = []
     short: list[NoteEvent] = []
     for note in split:
-        if note.duration >= 1.45 * tick:
+        if note.duration >= 1.85 * tick:
             long.append(note)
         else:
             short.append(note)
     if long:
         long = split_repeats_on_meter(y, sr, long, bpm, grid)
-    return sorted(short + long, key=lambda n: n.start)
+    out = sorted(short + long, key=lambda n: n.start)
+    return merge_unconfirmed_repeats(y, sr, out, tick)
 
 
 def stamp_amplitudes(
