@@ -418,6 +418,14 @@ def detect_flux_peaks(
     band = (freqs >= 50.0) & (freqs <= 1800.0)
     env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
     times = librosa.frames_to_time(np.arange(len(env)), sr=sr, hop_length=hop)
+    hi = spec[(freqs >= 2500.0) & (freqs <= 8000.0)].mean(axis=0) if np.any(
+        (freqs >= 2500.0) & (freqs <= 8000.0)
+    ) else np.zeros(spec.shape[1])
+    hi = hi[: len(env)]
+    hi_flux = np.maximum(np.diff(hi, prepend=hi[:1]), 0.0)
+    # Fingerstyle sustain has ~0 HF flux; slap/pop does not. Skip on clean FS.
+    if hi_flux.size == 0 or float(np.percentile(hi_flux, 80)) < 0.02:
+        return np.zeros(0, dtype=float)
     distance = max(2, int(0.38 * tick * float(sr) / hop))
     prom = 0.38 * float(np.percentile(env, 90) + 1e-9)
     peaks, _ = find_peaks(env, prominence=prom, distance=distance)
