@@ -1,7 +1,7 @@
 """Antifreeze bass chart: one row per written bar (akbobada, 5 pages).
 
 MIDI: B1=35 C#2=37 F#1=30 E1=28 A#1=34 G#1=32 D#2=39 E2=40 A2=45 G#2=44.
-PLAY is 1-based written bars in performance order (voltas + chorus 2x).
+PLAY is 1-based written bars in performance order (print repeats + voltas).
 """
 
 from chart_table import BarSpec
@@ -95,27 +95,35 @@ def _bars() -> list[BarSpec]:
 
 BARS = _bars()
 
-# 1-based written order as performed.
+# 1-based written order as performed on Antifreeze_bass_mixed.m4a.
+# Print: |: 9–24 :|, |: 25–42 1st / 25–39+43 2nd, chorus 48–59 ×2,
+# outro |: 73–80 :|. p.5 mm.60–64 (fill ending) is not a separate take
+# on this mix — those roots already occur in the double chorus; the
+# tape goes to the 65 breakdown. BarSpecs 60–64 stay as print truth.
 PLAY = (
-    list(range(1, 33))
-    + list(range(33, 43))  # 33–42 first ending
-    + list(range(33, 40))
-    + [43]  # 33–39 + 2nd ending
+    list(range(1, 9))
+    + list(range(9, 25))
+    + list(range(9, 25))  # |: m.9  :| m.24
+    + list(range(25, 43))  # |: m.25 through 1st ending 42
+    + list(range(25, 40))
+    + [43]  # 2nd time: 25–39 + 2nd ending
     + list(range(44, 48))  # pedal once
     + list(range(48, 60))
-    + list(range(48, 60))  # chorus loop 2x
-    + list(range(60, 81))
+    + list(range(48, 60))  # chorus loop 2x (six D#–G#–C#–F# cycles)
+    + list(range(65, 73))  # breakdown; skip 60–64 on this mix
+    + list(range(73, 81))
+    + list(range(73, 81))  # |: 73–80 :| both endings F#
 )
 
 SECTIONS = {
     "intro": (0, 8),
     "verse": (8, 16),
-    "middle_a": (16, 24),
-    "middle_b": (24, 32),
-    "vamp": (32, 50),
-    "pedal": (50, 54),
-    "chorus": (54, 78),
-    "late": (78, 200),
+    "middle_a": (16, 40),  # 17–24 + 9–24 repeat
+    "middle_b": (40, 48),  # first 25–32 (D# C# B F#)
+    "vamp": (48, 74),  # 33–42 + 25–32 + 33–39+43
+    "pedal": (74, 78),
+    "chorus": (78, 102),
+    "late": (102, 200),
 }
 
 LOCK_SNAPSHOT: dict[int, tuple[str, tuple[int, ...]]] = {
@@ -164,5 +172,7 @@ LOCK_SNAPSHOT: dict[int, tuple[str, tuple[int, ...]]] = {
     80: ("whole", (FS,)),
 }
 
-PLAY_SNAPSHOT_PREFIX = list(range(1, 33)) + list(range(33, 43))
+PLAY_SNAPSHOT_PREFIX = (
+    list(range(1, 9)) + list(range(9, 25)) * 2 + list(range(25, 43))
+)
 PLAY_SNAPSHOT_VOLTA2 = list(range(33, 40)) + [43]

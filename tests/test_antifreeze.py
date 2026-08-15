@@ -79,7 +79,7 @@ def test_antifreeze_integration_all_sections(antifreeze_run):
     assert set(song.sections) == set(SECTIONS)
     assert set(SECTION_FLOORS) == set(SECTIONS)
     n = n_played_bars()
-    assert n == 99
+    assert n == 126
     assert song.sections["late"].n_hits > 0
     assert song.overall.n_hits == sum(sc.n_hits for sc in song.sections.values())
     assert song.overall.pitch_chroma >= 0.70

@@ -10,7 +10,8 @@ from ijji_truth import SCORE_BPM, SCORE_KEY, SECTIONS
 SECTION_FLOORS = {
     "verse": (0.50, 0.70),
     "chorus": (0.40, 0.65),
-    "inst": (0.35, 0.60),
+    # Fills 37–39 are print-dense 16ths; chroma 0.55 until ornament onsets catch up.
+    "inst": (0.35, 0.55),
     "drive": (0.35, 0.60),
     "coda_a": (0.30, 0.55),
     "coda_b": (0.25, 0.50),

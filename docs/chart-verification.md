@@ -146,16 +146,17 @@ CLI: 있지 `--bpm 84 --grid 8 --key "F# minor"` (인쇄 ♩=83). Antifreeze `--
 
 있지: 1–72, 반복 없음.
 
-Antifreeze 99마디:
+Antifreeze 126마디 (`Antifreeze_bass_mixed.m4a`):
 
-- 1–32
-- 33–42 (1st ending)
-- 33–39 + 43 (2nd ending)
+- 1–8 인트로
+- 9–24, 9–24 (`|: ` m.9, `:|` m.24)
+- 25–42 (1st ending), 25–39 + 43 (2nd ending; `|: ` m.25)
 - 44–47 페달 1회
-- 48–59 두 번
-- 60–80
+- 48–59 두 번 (6 cycles)
+- 65–72 브레이크다운. 이 믹스에는 p.5 mm.60–64 필 엔딩이 따로 없음
+- 73–80, 73–80 (아웃트로 반복)
 
-볼타·코러스 횟수를 추측으로 바꾸지 않는다. `PLAY_SNAPSHOT_PREFIX` / `PLAY_SNAPSHOT_VOLTA2`가 앞부분을 얼린다.
+인쇄 반복 기호를 펼친 뒤 **스템 마디 근음·길이로 확인**한다. 하한을 맞추려고 PLAY 마디를 만들지 않는다. `PLAY_SNAPSHOT_PREFIX` / `PLAY_SNAPSHOT_VOLTA2`가 앞부분을 얼린다.
 
 ## 하지 말 것
 

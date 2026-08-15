@@ -21,7 +21,7 @@
 | 곡 | 식별자 | 기보 | 연주 순 | 비고 |
 |---|---|---|---|---|
 | 자우림 「있지」 | `ijji` (잊지 아님) | 72마디, 반복 없음 | 72 | `--bpm 84 --grid 8 --key "F# minor"` |
-| Antifreeze | `antifreeze` | 80마디 | 99 (볼타·코러스 2회) | `--bpm 128 --grid 8 --key F#` |
+| Antifreeze | `antifreeze` | 80마디 | 126 (9–24 반복, 25–볼타, 코러스 2회, 73–80 반복) | `--bpm 128 --grid 8 --key F#` |
 
 - `lock=score`: 인쇄에서 읽은 음. `rhythm=hits`는 불규칙 필. `split8`은 한 마디에 두 코드×4 8분. `half_ee`는 2분 + 스타카토 8분 둘.
 - `lock=approx` / `skip`: 탭이 아직 안 읽힌 마디. 타임라인만 유지.

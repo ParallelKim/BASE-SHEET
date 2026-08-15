@@ -134,7 +134,7 @@ def test_split8_and_half_ee_expand():
 def test_antifreeze_chart_is_80_written_bars():
     require_contiguous(AF_BARS)
     assert len(AF_BARS) == 80
-    assert len(AF_PLAY) == n_played_bars() == 99
+    assert len(AF_PLAY) == n_played_bars() == 126
     assert [h.pitch for h in written_bars()[0]] == [INTRO_BAR_ROOTS[0]] * 8
 
 
@@ -143,11 +143,16 @@ def test_antifreeze_lock_snapshot_matches_print_reads():
 
 
 def test_antifreeze_play_order_voltas_frozen():
-    assert AF_PLAY[:42] == PLAY_SNAPSHOT_PREFIX
+    assert AF_PLAY[: len(PLAY_SNAPSHOT_PREFIX)] == PLAY_SNAPSHOT_PREFIX
     i = AF_PLAY.index(43)
     assert AF_PLAY[i - 7 : i + 1] == PLAY_SNAPSHOT_VOLTA2
     assert AF_PLAY.count(43) == 1
+    assert AF_PLAY.count(9) == 2  # |: 9–24 :|
+    assert AF_PLAY.count(25) == 2  # |: 25 … volta
     assert AF_PLAY.count(48) == 2  # chorus loop twice
+    assert AF_PLAY.count(60) == 0  # fill ending not on this mix
+    assert AF_PLAY.count(65) == 1
+    assert AF_PLAY.count(73) == 2  # outro repeat
     assert play_order(80) == [w - 1 for w in AF_PLAY]
 
 
@@ -160,7 +165,7 @@ def test_antifreeze_truth_is_exactly_the_chart():
 def test_antifreeze_sections_partition_played_bars():
     hits = af_hits()
     n = n_played_bars()
-    assert n == 99
+    assert n == 126
     _assert_partition(AF_SECTIONS, n, start=0)
     intro = hits_in_bars(hits, *AF_SECTIONS["intro"])
     verse = hits_in_bars(hits, *AF_SECTIONS["verse"])
@@ -169,9 +174,12 @@ def test_antifreeze_sections_partition_played_bars():
     chorus = hits_in_bars(hits, *AF_SECTIONS["chorus"])
     late = hits_in_bars(hits, *AF_SECTIONS["late"])
     assert all(h.dur_eighths == 1.0 for h in chorus)
-    assert len(late) == 73
+    assert len(chorus) == 192  # 24 bars of 8ths
+    assert len(late) == 41  # 65–72 sparse + 73–80 ×2 wholes
     vamp = hits_in_bars(hits, *AF_SECTIONS["vamp"])
-    assert len(vamp) == 144  # includes 1st-ending m.42 F# 8ths
+    assert len(vamp) == 208  # 26 bars: 1st ending + middle_b2 + 2nd ending
+    middle_b = hits_in_bars(hits, *AF_SECTIONS["middle_b"])
+    assert [h.pitch for h in middle_b[:8]] == [39] * 8  # D# 8ths, not intro B
 
 
 def test_antifreeze_approx_bars_are_gone_after_p5_crops():
