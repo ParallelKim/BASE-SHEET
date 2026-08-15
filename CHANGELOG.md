@@ -42,6 +42,7 @@ python scripts/crop_score_bars.py   # 출판 악보 마디 크롭
 - 빠른 테스트: 차트 연속성, 스냅샷, 크롭 파일, MIDI 뷰어 페이지.
 - 느린 테스트: 실제 스템 전사 후 섹션별 exact/chroma 하한.
 - 마디 크롭: `tests/fixtures/score_crops/{ijji,antifreeze}/mNNN.png` (코드·TAB이 한 장에 보이게 상하 패딩).
+- 차트 제작 절차: [docs/chart-verification.md](docs/chart-verification.md). 에이전트는 [AGENTS.md](AGENTS.md)에서 참조한다.
 
 느린 스템 채점은 **차트 필 이후 기준으로 아직 다시 돌리지 않았다.** 레이아웃 잠금이 먼저다.
 
