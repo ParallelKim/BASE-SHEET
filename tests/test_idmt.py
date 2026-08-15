@@ -44,6 +44,30 @@ def test_idmt_public_bass_lines_are_not_random():
     scores = [score_track(tid, ROOT) for tid in iter_track_ids(ROOT)]
     mean_f = sum(s.onset_f for s in scores) / len(scores)
     mean_chroma = sum(s.pitch_chroma for s in scores) / len(scores)
-    assert mean_f >= 0.5
-    assert mean_chroma >= 0.8
+    mean_exact = sum(s.pitch_exact for s in scores) / len(scores)
+    assert mean_f >= 0.72
+    assert mean_chroma >= 0.90
+    assert mean_exact >= 0.85
     assert all(s.n_pred > 0 for s in scores)
+
+    by_id = {s.track_id: s for s in scores}
+    # Clean fingered / muted lines should lock pitch.
+    for tid in ("002", "003", "006", "010", "011", "015"):
+        s = by_id[tid]
+        assert s.onset_f >= 0.80, tid
+        assert s.pitch_exact >= 0.94, tid
+        assert s.pitch_chroma >= 0.95, tid
+    # Slap / pop: f0 is noisy; require usable onsets, not invented pitch.
+    for tid in ("007", "013", "016"):
+        s = by_id[tid]
+        assert s.onset_f >= 0.45, tid
+        assert s.pitch_chroma >= 0.70, tid
+    # Flageolet mix: keep chroma, do not fold harmonics to open strings.
+    s017 = by_id["017"]
+    assert s017.onset_f >= 0.45
+    assert s017.pitch_chroma >= 0.75
+    # Remaining fingerstyle / pick lines.
+    for tid in ("001", "004", "005", "008", "009", "012", "014"):
+        s = by_id[tid]
+        assert s.onset_f >= 0.70, tid
+        assert s.pitch_chroma >= 0.90, tid
