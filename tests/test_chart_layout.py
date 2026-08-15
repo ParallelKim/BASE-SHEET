@@ -62,10 +62,11 @@ def test_ijji_truth_is_exactly_the_chart():
 def test_ijji_verse_two_roots_per_bar():
     hits = ij_hits()
     verse = hits_in_bars(hits, *IJ_SECTIONS["verse"])
-    assert len(verse) == 31  # 10 pair bars + mm.16/24 fills
-    assert [(h.eighth, h.pitch) for h in verse[:4]] == [
+    assert len(verse) == 41  # 10 half_ee bars (3 hits) + mm.16/24 fills
+    assert [(h.eighth, h.pitch) for h in verse[:5]] == [
         (0.0, 30),
         (4.0, 38),
+        (5.0, 38),
         (0.0, 33),
         (4.0, 28),
     ]
@@ -73,8 +74,17 @@ def test_ijji_verse_two_roots_per_bar():
 
 def test_ijji_chorus_one_chord_eighths():
     chorus = hits_in_bars(ij_hits(), *IJ_SECTIONS["chorus"])
-    assert len(chorus) == 64  # 6 eight-bars + two Bm fills
+    assert len(chorus) == 65  # 6 eight-bars + m.28 (8) + m.32 (9)
     assert chorus[0].pitch == 38 and chorus[8].pitch == 30
+
+
+def test_ijji_drive_is_two_chords_per_bar():
+    spec = IJ_BARS[44]  # m.45
+    assert spec.rhythm == "split8" and spec.pitches == (30, 28)
+    spec51 = IJ_BARS[50]  # m.51
+    assert spec51.rhythm == "split8" and spec51.pitches == (30, 28)
+    spec53 = IJ_BARS[52]  # m.53
+    assert spec53.rhythm == "split8" and spec53.pitches == (30, 32)
 
 
 def test_ijji_fill_bar_16_is_a_then_lick():
@@ -90,6 +100,8 @@ def test_ijji_sections_partition():
     coda_b = hits_in_bars(hits, *IJ_SECTIONS["coda_b"])
     assert len(coda_b) == 12
     assert coda_b[0].pitch == 42  # A-string 9 = F#2
+    coda_a = hits_in_bars(hits, *IJ_SECTIONS["coda_a"])
+    assert [h.pitch for h in coda_a[:3]] == [30, 33, 30]
     assert sum(len(hits_in_bars(hits, a, b)) for a, b in IJ_SECTIONS.values()) == len(hits)
 
 
@@ -105,6 +117,18 @@ def test_hits_rhythm_expands_onsets():
     assert [h.pitch for h in hits] == list(spec.pitches)
     assert hits[0].eighth == 0.0
     assert sum(h.dur_eighths for h in hits) == 8.0
+
+
+def test_split8_and_half_ee_expand():
+    split_hits = spec_hits(IJ_BARS[44], 44)  # m.45
+    assert [h.pitch for h in split_hits] == [30] * 4 + [28] * 4
+    assert all(h.dur_eighths == 1.0 for h in split_hits)
+    ee = spec_hits(IJ_BARS[12], 12)  # m.13
+    assert [(h.eighth, h.pitch, h.dur_eighths) for h in ee] == [
+        (0.0, 30, 4.0),
+        (4.0, 38, 1.0),
+        (5.0, 38, 1.0),
+    ]
 
 
 def test_antifreeze_chart_is_80_written_bars():
@@ -145,15 +169,15 @@ def test_antifreeze_sections_partition_played_bars():
     chorus = hits_in_bars(hits, *AF_SECTIONS["chorus"])
     late = hits_in_bars(hits, *AF_SECTIONS["late"])
     assert all(h.dur_eighths == 1.0 for h in chorus)
-    assert len(late) == 84
+    assert len(late) == 73
     vamp = hits_in_bars(hits, *AF_SECTIONS["vamp"])
     assert len(vamp) == 144  # includes 1st-ending m.42 F# 8ths
 
 
-def test_antifreeze_approx_bars_are_unread_p5_only():
+def test_antifreeze_approx_bars_are_gone_after_p5_crops():
     approx = [s for s in AF_BARS if s.lock == "approx"]
-    assert [s.written for s in approx] == [67, 69, 71, 72, 74, 76, 77, 78, 80]
-    assert all(s.rhythm == "skip" and s.pitches == () for s in approx)
+    assert approx == []
+    assert all(s.lock == "score" for s in AF_BARS)
 
 
 def test_antifreeze_bar_42_and_p5_loop_are_score_locked():

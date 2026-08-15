@@ -18,10 +18,13 @@ class BarSpec:
     ``rhythm=hits``: irregular fill. ``events`` is
     ``(eighth, dur_eighths, pitch)`` in 0–8 eighths; ``pitches`` is that
     sequence (for snapshots).
+
+    ``rhythm=split8``: four 8ths of pitch A, four 8ths of pitch B.
+    ``rhythm=half_ee``: half note A, then two staccato 8ths of B (beat 4 rest).
     """
 
     written: int
-    rhythm: str  # rest | eight | pair | whole | half | skip | hits
+    rhythm: str  # rest | eight | pair | whole | half | skip | hits | split8 | half_ee
     pitches: tuple[int, ...]
     lock: str
     comment: str = ""
@@ -40,6 +43,20 @@ def spec_hits(spec: BarSpec, play_bar: int) -> list[Hit]:
         return [
             sustain(a, play_bar, 0.0, 4.0),
             sustain(b, play_bar, 4.0, 4.0),
+        ]
+    if spec.rhythm == "split8":
+        assert len(spec.pitches) == 2, spec
+        a, b = spec.pitches
+        return [Hit(play_bar, float(i), 1.0, a) for i in range(4)] + [
+            Hit(play_bar, float(i), 1.0, b) for i in range(4, 8)
+        ]
+    if spec.rhythm == "half_ee":
+        assert len(spec.pitches) == 2, spec
+        a, b = spec.pitches
+        return [
+            sustain(a, play_bar, 0.0, 4.0),
+            Hit(play_bar, 4.0, 1.0, b),
+            Hit(play_bar, 5.0, 1.0, b),
         ]
     if spec.rhythm == "whole":
         assert len(spec.pitches) == 1, spec
@@ -69,6 +86,8 @@ def require_contiguous(specs: list[BarSpec]) -> None:
             assert spec.rhythm == "skip" and spec.pitches == (), spec
         if spec.lock == "score":
             assert spec.rhythm != "skip", spec
+        if spec.rhythm in ("pair", "split8", "half_ee"):
+            assert len(spec.pitches) == 2, spec
         if spec.rhythm == "hits":
             assert spec.events, spec
             assert spec.pitches == tuple(p for _, _, p in spec.events), spec

@@ -1,21 +1,20 @@
 """Antifreeze bass chart: one row per written bar (akbobada, 5 pages).
 
-MIDI: B1=35 C#2=37 F#1=30 E1=28 A#1=34 G#1=32 D#2=39 E2=40 A2=45.
+MIDI: B1=35 C#2=37 F#1=30 E1=28 A#1=34 G#1=32 D#2=39 E2=40 A2=45 G#2=44.
 PLAY is 1-based written bars in performance order (voltas + chorus 2x).
 """
 
 from chart_table import BarSpec
 
 B, CS, FS, EN, AS, GS, DS = 35, 37, 30, 28, 34, 32, 39
-E2, A2 = 40, 45
 
 
 def _eight(w: int, p: int, comment: str, lock: str = "score") -> BarSpec:
     return BarSpec(w, "eight", (p,), lock, comment)
 
 
-def _skip(w: int, comment: str) -> BarSpec:
-    return BarSpec(w, "skip", (), "approx", comment)
+def _whole(w: int, p: int, comment: str) -> BarSpec:
+    return BarSpec(w, "whole", (p,), "score", comment)
 
 
 def _hits(w: int, events: list[tuple[float, float, int]], comment: str) -> BarSpec:
@@ -23,23 +22,17 @@ def _hits(w: int, events: list[tuple[float, float, int]], comment: str) -> BarSp
     return BarSpec(w, "hits", tuple(p for _, _, p in ev), "score", comment, events=ev)
 
 
-def _eights_from_frets(w: int, frets: list[int], fmap: dict[int, int], comment: str) -> BarSpec:
-    """One printed TAB digit per eighth; remaining eighths are omitted."""
-    events = []
-    for i, f in enumerate(frets):
-        if f not in fmap:
-            continue
-        events.append((float(i), 1.0, fmap[f]))
-    assert events, (w, frets)
+def _first_n_eights(w: int, n: int, pitch: int, comment: str) -> BarSpec:
+    events = [(float(i), 1.0, pitch) for i in range(n)]
     return _hits(w, events, comment)
 
 
 def _bars() -> list[BarSpec]:
     rows: list[BarSpec] = []
 
-    def add_eights(start: int, pitches: list[int], comment: str, lock: str = "score") -> None:
+    def add_eights(start: int, pitches: list[int], comment: str) -> None:
         for i, p in enumerate(pitches):
-            rows.append(_eight(start + i, p, comment, lock))
+            rows.append(_eight(start + i, p, comment))
 
     add_eights(1, [B, CS, FS, EN] * 2, "p.1 intro | B | C#7 | F# | E |")
     add_eights(9, [B, CS, FS, EN] * 2, "p.1 verse, same riff")
@@ -47,59 +40,56 @@ def _bars() -> list[BarSpec]:
     add_eights(21, [GS, CS, FS, FS], "p.2 mm.21–24")
     add_eights(25, [DS, CS, B, FS], "p.2 mm.25–28")
     add_eights(29, [DS, CS, B, FS], "p.2 mm.29–32")
-    add_eights(33, [B, AS, B, AS, B, AS, B], "p.3 vamp B / A#m7")
-    rows.append(_eight(40, GS, "1st ending G#m7"))
-    rows.append(_eight(41, FS, "1st ending F#"))
+    add_eights(33, [B, AS, B, AS, B, AS, B], "p.3 vamp B / A#m7 (A-string 2 / 1)")
+    rows.append(_eight(40, GS, "1st ending G#m7 E-string 4"))
+    rows.append(_eight(41, FS, "1st ending F# E-string 2"))
     rows.append(_eight(42, FS, "1st ending last bar F# 8ths (TAB 2s)"))
-    rows.append(_eight(43, GS, "2nd ending G#m7"))
-    add_eights(44, [FS, FS, FS, FS], "p.4 F# pedal")
+    rows.append(_eight(43, GS, "2nd ending G#m7 E-string 4"))
+    add_eights(44, [FS, FS, FS, FS], "p.4 F# pedal (printed 44 = E-string 2)")
     add_eights(48, [DS, GS, CS, FS] * 3, "chorus loop | D#m | G# | C#7 | F# |")
 
-    # p.5 mm.60–80: another D# G# C# F# cycle; some bars are fills.
-    loop = [DS, GS, CS, FS]
-    # 60–63: TAB 6/4/beams/2 = straight loop
-    add_eights(60, loop, "p.5 loop | D#m | G# | C#7 | F# |")
+    # p.5 mm.60–63: main staff is straight 8ths (fill staff below is optional).
+    add_eights(60, [DS, GS, CS, FS], "p.5 loop | D#m | G# | C#7 | F# |")
 
-    # 64 DS fill: TAB 6-8-6-6
-    rows.append(
-        _eights_from_frets(64, [6, 8, 6, 6], {6: DS, 8: E2}, "p.5 D# fill 6-8-6-6")
-    )
-    # 65 GS fill: TAB 8-6-4-6-4-4-4 (drop OCR '3')
-    rows.append(
-        _eights_from_frets(
-            65, [8, 6, 4, 6, 4, 4, 4], {8: E2, 6: DS, 4: GS}, "p.5 G# fill"
-        )
-    )
-    # 66 CS fill: TAB 6-8-8-6-4-4
-    rows.append(
-        _eights_from_frets(
-            66, [6, 8, 8, 6, 4, 4], {6: DS, 8: E2, 4: CS}, "p.5 C# fill"
-        )
-    )
-    rows.append(_skip(67, "p.5 TAB not locked"))
-    # 68 DS fill: TAB 4-4-6-4-6-4-6-4
-    rows.append(
-        _eights_from_frets(
-            68, [4, 4, 6, 4, 6, 4, 6, 4], {4: GS, 6: DS}, "p.5 D#/G# fill 4-6"
-        )
-    )
-    rows.append(_skip(69, "p.5 TAB not locked"))
-    rows.append(_eight(70, CS, "p.5 C# 8ths (TAB 4s)"))
-    rows.append(_skip(71, "p.5 TAB not locked"))
-    rows.append(_skip(72, "p.5 TAB not locked"))
-    rows.append(_eight(73, GS, "p.5 G# 8ths (TAB 4s)"))
-    rows.append(_skip(74, "p.5 TAB not locked"))
-    rows.append(_eight(75, FS, "p.5 F# 8ths (TAB 2s)"))
-    for w in (76, 77, 78):
-        rows.append(_skip(w, "p.5 TAB not locked"))
+    # 64: 2nd ending F# fill — two C# 8ths then A-string 6-4-6-4-6-4.
     rows.append(
         _hits(
-            79,
-            [(0.0, 2.0, EN), (2.0, 2.0, EN), (4.0, 4.0, FS)],
-            "p.5 outro 0-0-2",
+            64,
+            [
+                (0.0, 1.0, CS),
+                (1.0, 1.0, CS),
+                (2.0, 1.0, DS),
+                (3.0, 1.0, CS),
+                (4.0, 1.0, DS),
+                (5.0, 1.0, CS),
+                (6.0, 1.0, DS),
+                (7.0, 1.0, CS),
+            ],
+            "p.5 m064 2nd ending fill A4-4-6-4-6-4-6-4",
         )
     )
-    rows.append(_skip(80, "p.5 final bar TAB not locked"))
+    rows.append(_first_n_eights(65, 2, DS, "p.5 D#m: two 8ths then rest"))
+    rows.append(_first_n_eights(66, 4, GS, "p.5 G#: four 8ths then rest"))
+    rows.append(_first_n_eights(67, 2, CS, "p.5 C#7: two 8ths then rest"))
+    rows.append(_first_n_eights(68, 4, FS, "p.5 F#: four 8ths then rest"))
+    rows.append(
+        _hits(
+            69,
+            [(0.0, 1.0, DS), (1.0, 1.0, DS), (7.0, 1.0, GS)],
+            "p.5 D#m: two 8ths, rest, G# pickup 8th",
+        )
+    )
+    rows.append(_first_n_eights(70, 4, GS, "p.5 G#: four 8ths then rest"))
+    rows.append(_first_n_eights(71, 2, CS, "p.5 C#7: two 8ths then rest"))
+    rows.append(_first_n_eights(72, 4, FS, "p.5 F#: four 8ths then rest"))
+    rows.append(_whole(73, DS, "p.5 outro whole D#m"))
+    rows.append(_whole(74, GS, "p.5 outro whole G#"))
+    rows.append(_whole(75, CS, "p.5 outro whole C#7"))
+    rows.append(_whole(76, FS, "p.5 outro whole F#"))
+    rows.append(_whole(77, DS, "p.5 outro whole D#m"))
+    rows.append(_whole(78, GS, "p.5 outro whole G#"))
+    rows.append(_whole(79, CS, "p.5 outro whole C#7"))
+    rows.append(_whole(80, FS, "p.5 final whole F# (volta endings both F#)"))
     return rows
 
 
@@ -155,14 +145,23 @@ LOCK_SNAPSHOT: dict[int, tuple[str, tuple[int, ...]]] = {
     61: ("eight", (GS,)),
     62: ("eight", (CS,)),
     63: ("eight", (FS,)),
-    64: ("hits", (DS, E2, DS, DS)),
-    65: ("hits", (E2, DS, GS, DS, GS, GS, GS)),
-    66: ("hits", (DS, E2, E2, DS, CS, CS)),
-    68: ("hits", (GS, GS, DS, GS, DS, GS, DS, GS)),
-    70: ("eight", (CS,)),
-    73: ("eight", (GS,)),
-    75: ("eight", (FS,)),
-    79: ("hits", (EN, EN, FS)),
+    64: ("hits", (CS, CS, DS, CS, DS, CS, DS, CS)),
+    65: ("hits", (DS, DS)),
+    66: ("hits", (GS, GS, GS, GS)),
+    67: ("hits", (CS, CS)),
+    68: ("hits", (FS, FS, FS, FS)),
+    69: ("hits", (DS, DS, GS)),
+    70: ("hits", (GS, GS, GS, GS)),
+    71: ("hits", (CS, CS)),
+    72: ("hits", (FS, FS, FS, FS)),
+    73: ("whole", (DS,)),
+    74: ("whole", (GS,)),
+    75: ("whole", (CS,)),
+    76: ("whole", (FS,)),
+    77: ("whole", (DS,)),
+    78: ("whole", (GS,)),
+    79: ("whole", (CS,)),
+    80: ("whole", (FS,)),
 }
 
 PLAY_SNAPSHOT_PREFIX = list(range(1, 33)) + list(range(33, 43))
