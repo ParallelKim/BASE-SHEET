@@ -11,7 +11,7 @@ from song_score import score_song
 
 FIXTURE = Path(__file__).parent / "fixtures" / "Antifreeze_bass_mixed.m4a"
 
-# (pitch_exact, pitch_chroma) — intro/verse are the known-strong 8th loop.
+# (pitch_exact, pitch_chroma). late bars are lock=approx on the chart — not print-complete.
 SECTION_FLOORS = {
     "intro": (0.90, 0.95),
     "verse": (0.90, 0.95),

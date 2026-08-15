@@ -6,7 +6,7 @@ from base_sheet.pipeline import run
 from ijji_eval import fixture_path, score_ijji
 from ijji_truth import SCORE_BPM, SCORE_KEY, SECTIONS
 
-# (pitch_exact, pitch_chroma). Tacet has no tab hits.
+# (pitch_exact, pitch_chroma). coda_b is lock=approx on the chart — not print-complete.
 SECTION_FLOORS = {
     "verse": (0.50, 0.70),
     "chorus": (0.40, 0.65),
