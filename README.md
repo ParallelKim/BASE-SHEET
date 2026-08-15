@@ -56,7 +56,7 @@ python scripts/crop_score_bars.py
 # tests/fixtures/score_crops/antifreeze/m042.png
 ```
 
-채점 진리를 인쇄에서 읽는 절차는 [docs/chart-verification.md](docs/chart-verification.md). 에이전트는 [AGENTS.md](AGENTS.md)에서 이 문서를 따른다.
+채점 진리를 인쇄에서 읽는 절차는 [docs/chart-verification.md](docs/chart-verification.md). 에이전트는 [AGENTS.md](AGENTS.md). 공유 픽스처 목록은 [tests/fixtures/README.md](tests/fixtures/README.md).
 
 ```bash
 python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out --bpm 128 --grid 8 --key F#

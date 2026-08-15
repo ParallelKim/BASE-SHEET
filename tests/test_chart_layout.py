@@ -101,7 +101,7 @@ def test_ijji_sections_partition():
     assert len(coda_b) == 12
     assert coda_b[0].pitch == 42  # A-string 9 = F#2
     coda_a = hits_in_bars(hits, *IJ_SECTIONS["coda_a"])
-    assert [h.pitch for h in coda_a[:3]] == [30, 33, 30]
+    assert [h.pitch for h in coda_a[:3]] == [30, 30, 30]
     assert sum(len(hits_in_bars(hits, a, b)) for a, b in IJ_SECTIONS.values()) == len(hits)
 
 

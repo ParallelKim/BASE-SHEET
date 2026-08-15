@@ -40,7 +40,7 @@
 
 ```bash
 python scripts/crop_score_bars.py
-# 있지 PDF는 업로드/로컬 경로. 라이선스 PDF는 커밋하지 않는다.
+# 기본 PDF: tests/fixtures/ijji_bass_score.pdf, Antifreeze_bass_score.pdf
 ```
 
 각 `mNNN.png`는 기보 한 마디다. 코드·가사·베이스 오선·TAB이 한 장에 들어가게 상하를 넉넉히 자른다. 파일명의 `NNN`은 **인쇄된 마디 번호**와 같아야 한다.
@@ -123,7 +123,8 @@ OCR로 채운 필·루프는 특히 다시 본다. 이 프로젝트에서 실제
 
 ### 9. 커밋 범위
 
-커밋하지 않는다: 라이선스 스템(`ijji_bass.m4a`, IDMT wav, Antifreeze m4a가 정책상 빠져 있으면 그대로), 있지 PDF.
+커밋하지 않는다: 있지 스템(`ijji_bass.m4a`), IDMT wav (재배포 금지).
+출판 악보 PDF·마디 크롭·이 문서는 팀에 공유하려고 커밋한다.
 
 크롭 PNG·차트·테스트·이 문서는 커밋한다.
 
@@ -162,6 +163,6 @@ Antifreeze 99마디:
 - 추측 근음을 `lock=score`로 두기
 - 전곡을 한 점수로 합쳐 하한만 맞추기
 - `ijji*` 이름을 「잊지」 쪽으로 바꾸기
-- 스템·있지 PDF를 커밋하기
+- 있지 스템(`ijji_bass.m4a`)·IDMT를 커밋하기. 악보 PDF와 크롭은 커밋한다.
 - 파이프라인 기본값을 Basic Pitch로 두기, slap 스펙트럼 피크 재조율, 타이트 NMS, Antifreeze 8분을 붙이기
-- 크롭 vison 캡션의 옥타브(A-string 0 = A2 같은 말)를 그대로 믿기. A현 개방은 A1=33이다.
+- 크롭 비전 캡션의 옥타브(A-string 0 = A2 같은 말)를 그대로 믿기. A현 개방은 A1=33이다.

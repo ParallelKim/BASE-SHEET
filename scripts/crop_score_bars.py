@@ -7,6 +7,7 @@ symbols, lyrics, bass notation, TAB, and stems stay in frame.
     python scripts/crop_score_bars.py
     python scripts/crop_score_bars.py --ijji-pdf /path/to/있지.pdf
 
+PDFs default to ``tests/fixtures/{ijji,Antifreeze}_bass_score.pdf``.
 Writes ``tests/fixtures/score_crops/{ijji,antifreeze}/mNNN.png``.
 """
 
@@ -33,8 +34,8 @@ PAD_X = 24
 NEIGHBOR_GAP = 16
 
 IJJI_PDF_CANDIDATES = [
-    Path("/home/ubuntu/.cursor/projects/workspace/uploads/_B________1291.pdf"),
     ROOT / "tests" / "fixtures" / "ijji_bass_score.pdf",
+    Path("/home/ubuntu/.cursor/projects/workspace/uploads/_B________1291.pdf"),
 ]
 ANTIFREEZE_PDF = ROOT / "tests" / "fixtures" / "Antifreeze_bass_score.pdf"
 

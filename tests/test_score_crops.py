@@ -8,6 +8,14 @@ def test_crop_script_exists():
     assert (ROOT / "scripts" / "crop_score_bars.py").is_file()
 
 
+def test_published_score_pdfs_are_in_fixtures():
+    fixtures = ROOT / "tests" / "fixtures"
+    assert (fixtures / "ijji_bass_score.pdf").is_file()
+    assert (fixtures / "Antifreeze_bass_score.pdf").is_file()
+    assert (fixtures / "ijji_bass_score.pdf").stat().st_size > 10_000
+    assert (fixtures / "Antifreeze_bass_score.pdf").stat().st_size > 10_000
+
+
 def test_ijji_bar_crops_cover_72_measures():
     bars = sorted((CROPS / "ijji").glob("m*.png"))
     assert [p.name for p in bars] == [f"m{i:03d}.png" for i in range(1, 73)]

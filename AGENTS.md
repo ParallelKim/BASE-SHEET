@@ -19,6 +19,8 @@
 
 ## 저장소
 
-커밋하지 않음: 라이선스 오디오(있지·Antifreeze 스템, IDMT wav), 있지 PDF.
+팀에 공유하려고 커밋함: 출판 악보 PDF (`tests/fixtures/*_bass_score.pdf`), 마디 크롭, [docs/chart-verification.md](docs/chart-verification.md).
+
+커밋하지 않음: 있지 스템(`ijji_bass.m4a`), IDMT wav (CC BY-NC-ND 재배포 금지). Antifreeze 스템 m4a는 이미 픽스처에 있다.
 
 섹션별 테스트와 전곡 통합을 유지한다. 한 점수로 섞지 않는다. 차트만 바꾼 뒤 느린 스템 하한을 맞추려고 진리 피치를 깎지 않는다.

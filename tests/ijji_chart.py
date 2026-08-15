@@ -156,16 +156,43 @@ def _bars() -> list[BarSpec]:
             [
                 (0.0, 1.0, FS),
                 (1.0, 1.0, FS),
-                (4.0, 1.0, FS),
-                (5.0, 1.5, D),
-                (6.5, 0.5, D),
-                (7.0, 1.0, D),
+                (2.0, 1.0, FS),
+                (4.0, 1.5, D),
+                (5.5, 0.5, D),
+                (6.0, 1.0, D),
             ],
-            "inst m037 F#m|D 8ths (printed 37)",
+            "inst m037 F#m|D 8ths then dotted-16-8th D (printed 37)",
         )
     )
-    rows.append(_half_ee(38, A, E, "inst | A E | half + two 8ths"))
-    rows.append(_half_ee(39, FS, D, "inst | F# D | half + two 8ths"))
+    rows.append(
+        _hits(
+            38,
+            [
+                (0.0, 1.5, A),
+                (1.5, 0.5, A),
+                (2.0, 1.0, A),
+                (4.0, 0.5, E),
+                (4.5, 0.5, E),
+                (5.0, 0.5, GS),
+                (5.5, 0.5, E),
+            ],
+            "inst m038 A 5-5-5 then E 0-0-4-0 16ths",
+        )
+    )
+    rows.append(
+        _hits(
+            39,
+            [
+                (0.0, 1.0, FS),
+                (1.0, 1.0, FS),
+                (2.0, 1.0, FS),
+                (4.0, 1.5, D),
+                (5.5, 0.5, D),
+                (6.0, 1.0, D),
+            ],
+            "inst m039 F#m|D 8ths then dotted-16-8th D",
+        )
+    )
     rows.append(
         _hits(
             40,
@@ -265,22 +292,37 @@ def _bars() -> list[BarSpec]:
         _hits(
             56,
             [
-                (0.0, 1.0, E2),
+                (0.0, 1.0, BM),
                 (1.0, 1.0, B2),
-                (2.0, 1.0, B2),
+                (2.0, 1.0, BM),
                 (3.0, 1.0, E2),
                 (4.0, 1.0, B2),
-                (5.0, 1.0, E2),
+                (5.0, 1.0, BM),
                 (6.0, 0.5, A2),
                 (6.5, 0.5, GS2),
                 (7.0, 1.0, E2),
             ],
-            "drive m056 Bm lick A7 / D9 / D7-6 / A7 (ghosts skipped)",
+            "drive m056 Bm: E7 / D9 slap, end D7-6 A7 (ghosts skipped)",
         )
     )
     rows.append(_split8(57, FS2, GS2, "drive m057 F#m|E/G# A9 then D6 (printed 57)"))
-    rows.append(_split8(58, A2, D, "drive m058 A|D D7 then A5"))
-    rows.append(_split8(59, FS2, E2, "drive m059 F#m|E D4 then A7"))
+    rows.append(
+        _hits(
+            58,
+            [
+                (0.0, 1.0, E2),
+                (1.0, 1.0, E2),
+                (2.0, 1.0, E2),
+                (3.0, 1.0, A2),
+                (4.0, 1.0, E2),
+                (5.0, 1.0, D),
+                (6.0, 1.0, A2),
+                (7.0, 1.0, G2),
+            ],
+            "drive m058 A|E fill A7×3 D7 | A7 A5 D7 D5",
+        )
+    )
+    rows.append(_split8(59, FS2, BM, "drive m059 F#m|E D4 then E-string 7 = B"))
     rows.append(
         _hits(
             60,
@@ -289,20 +331,19 @@ def _bars() -> list[BarSpec]:
                 (1.0, 1.0, BM),
                 (2.0, 1.0, BM),
                 (3.0, 1.0, BM),
-                (4.0, 1.0, BM),
-                (5.0, 0.5, FS2),
-                (5.5, 0.5, G2),
-                (6.0, 0.5, BM),
-                (6.5, 0.5, A),
-                (7.0, 0.5, GS),
-                (7.5, 0.5, E),
+                (4.0, 1.0, E2),
+                (5.0, 0.5, G2),
+                (5.5, 0.5, FS2),
+                (6.0, 0.5, D),
+                (6.5, 0.5, CS),
+                (7.0, 1.0, A),
             ],
-            "drive m060 Bm: A2×5 then D4-5 A2 E5-4-0",
+            "drive m060 Bm: 7s then D5-4, A5-4-0",
         )
     )
 
     rows.append(_whole(61, FS, "coda_a F# pedal E-string 2, tied (printed 61)"))
-    rows.append(_whole(62, A, "coda_a A pedal (A|E chords, open A)"))
+    rows.append(_whole(62, FS, "coda_a F# still tied (TAB 2 from previous)"))
     rows.append(_whole(63, FS, "coda_a F# pedal E-string 2, tied"))
     rows.append(_pair(64, A, E2, "coda_a A then E2 (E5 / A7), section end"))
 
@@ -352,6 +393,8 @@ LOCK_SNAPSHOT: dict[int, tuple[str, tuple[int, ...]]] = {
     34: ("half_ee", (A, E)),
     36: ("hits", (A, A, GS2, E2, E, E)),
     37: ("hits", (FS, FS, FS, D, D, D)),
+    38: ("hits", (A, A, A, E, E, GS, E)),
+    39: ("hits", (FS, FS, FS, D, D, D)),
     40: ("hits", (A, A, E2, B2, A2, GS2)),
     41: ("whole", (FS2,)),
     42: ("pair", (A, E2)),
@@ -366,11 +409,13 @@ LOCK_SNAPSHOT: dict[int, tuple[str, tuple[int, ...]]] = {
     53: ("split8", (FS, GS)),
     54: ("hits", (A, A, A, E2, E2, D, D, A2)),
     55: ("split8", (FS2, E2)),
+    56: ("hits", (BM, B2, BM, E2, B2, BM, A2, GS2, E2)),
     57: ("split8", (FS2, GS2)),
-    58: ("split8", (A2, D)),
-    59: ("split8", (FS2, E2)),
+    58: ("hits", (E2, E2, E2, A2, E2, D, A2, G2)),
+    59: ("split8", (FS2, BM)),
+    60: ("hits", (BM, BM, BM, BM, E2, G2, FS2, D, CS, A)),
     61: ("whole", (FS,)),
-    62: ("whole", (A,)),
+    62: ("whole", (FS,)),
     63: ("whole", (FS,)),
     64: ("pair", (A, E2)),
     65: ("whole", (FS2,)),
