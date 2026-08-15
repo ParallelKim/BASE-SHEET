@@ -98,6 +98,11 @@ def test_merge_glues_same_pitch_wobble_not_real_plucks():
     assert len(out) == 1
     assert out[0].start == 0.0 and out[0].end == 1.8
 
+    jitter = [NoteEvent(0.0, 0.9, 35), NoteEvent(0.9, 1.8, 36)]
+    glued = merge_unconfirmed_repeats(y, sr, jitter, seconds_per_tick(120.0, "8"))
+    assert len(glued) == 1
+    assert glued[0].pitch == 35
+
     eighth = 0.25
     plucks = _pluck_train(8, eighth, sr, freq=61.74)
     repeated = [NoteEvent(i * eighth, (i + 1) * eighth, 35) for i in range(8)]
