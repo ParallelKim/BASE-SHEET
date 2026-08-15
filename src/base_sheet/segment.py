@@ -329,27 +329,12 @@ def _seed_holes_at_onsets(
     sr: int | float | None = None,
 ) -> list[NoteEvent]:
     """If f0 dropped out between plucks, still put a note on the attack."""
+    del y, sr
     if not notes:
         return []
     ordered = sorted(notes, key=lambda n: n.start)
     extra: list[NoteEvent] = []
     min_hole = 0.45 * tick
-    mag_at = None
-    freqs = None
-    times = None
-    stft = None
-    if y is not None and sr is not None:
-        import librosa
-
-        hop = 512
-        stft = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=4096, hop_length=hop))
-        freqs = librosa.fft_frequencies(sr=float(sr), n_fft=4096)
-        times = librosa.frames_to_time(np.arange(stft.shape[1]), sr=sr, hop_length=hop)
-
-        def mag_at(t: float) -> np.ndarray:
-            idx = int(np.clip(np.searchsorted(times, t), 0, stft.shape[1] - 1))
-            return stft[:, idx]
-
     for onset in np.atleast_1d(onsets).astype(float):
         covered = any(n.start - 0.02 <= onset < n.end for n in ordered)
         if covered:
@@ -364,19 +349,11 @@ def _seed_holes_at_onsets(
             ordered,
             key=lambda n: min(abs(n.start - onset), abs(n.end - onset)),
         )
-        pitch = nearest.pitch
-        if mag_at is not None and freqs is not None:
-            from base_sheet.correct import maybe_flageolet_pitch, midi_from_spectrum_peak
-
-            mag = mag_at(onset)
-            peaked = midi_from_spectrum_peak(mag, freqs)
-            if peaked is not None:
-                pitch = maybe_flageolet_pitch(mag, freqs, peaked)
         extra.append(
             NoteEvent(
                 start=float(onset),
                 end=min(float(onset) + 0.85 * tick, gap_end),
-                pitch=pitch,
+                pitch=nearest.pitch,
                 amplitude=nearest.amplitude,
             )
         )
@@ -500,7 +477,7 @@ def split_repeated_pitches(
 
     tick = seconds_per_tick(bpm, grid)
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
-    onsets = _nms_times(onsets, max(0.09, 0.42 * tick))
+    onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
     onsets = _confirmed_reattacks(y, sr, onsets, tick)
     split = _seed_holes_at_onsets(notes, onsets, tick, y=y, sr=sr)
     split = split_at_onsets(split, onsets, min_duration=min_duration)

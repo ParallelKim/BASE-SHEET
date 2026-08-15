@@ -167,12 +167,12 @@ def test_snap_register_keeps_flageolet_g4():
 
 
 def test_flageolet_g4_sine_is_not_folded_to_open_string():
-    sr = 22050
-    t = np.arange(int(0.7 * sr)) / sr
-    y = (0.65 * np.sin(2 * np.pi * 392.0 * t)).astype(np.float32)
-    notes = [NoteEvent(0.05, 0.55, 36, 0.8)]
-    out = correct_note_octaves(y, sr, notes)
-    assert out[0].pitch == 67
+    freqs = np.linspace(0, 500, 1001)
+    mag = np.zeros_like(freqs)
+    mag[(freqs >= 385) & (freqs <= 400)] = 1.0
+    from base_sheet.correct import maybe_flageolet_pitch
+
+    assert maybe_flageolet_pitch(mag, freqs, 36) == 67
 
 
 def test_spectrum_keeps_g2_when_odd_harmonics_belong_to_g2():

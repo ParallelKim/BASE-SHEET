@@ -268,7 +268,6 @@ def correct_note_octaves(
         else:
             mag = np.median(stft[:, mask], axis=1)
         pitch = choose_octave_from_spectrum(mag, freqs, note.pitch)
-        pitch = maybe_flageolet_pitch(mag, freqs, pitch)
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )
