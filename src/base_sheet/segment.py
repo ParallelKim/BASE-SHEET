@@ -274,12 +274,7 @@ def split_repeats_on_meter(
             peak, peak_t = _max_near(rms, t)
             flux, flux_t = _max_near(onset_env, t)
             trough = _at(rms, t - half)
-            flux_trough = _at(onset_env, t - half)
-            reattack = (
-                peak >= 1.38 * max(trough, 1e-6)
-                and peak >= 0.20 * attack
-                and flux >= 1.20 * max(flux_trough, 1e-6)
-            )
+            reattack = peak >= 1.38 * max(trough, 1e-6) and peak >= 0.20 * attack
             if reattack:
                 cut = flux_t if flux >= env_floor else peak_t
                 if note.start + min_dur <= cut <= note.end - min_dur:
@@ -375,32 +370,25 @@ def _confirmed_reattacks(
         return onsets
     hop = 256
     rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=512)[0]
-    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=2048, hop_length=hop))
-    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=2048)
-    band = (freqs >= 50.0) & (freqs <= 1800.0)
-    onset_env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
-    n_frames = min(len(rms), len(onset_env))
-    rms = rms[:n_frames]
-    onset_env = onset_env[:n_frames]
-    times = librosa.frames_to_time(np.arange(n_frames), sr=sr, hop_length=hop)
+    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
     half = 0.45 * tick
     win = min(0.06, 0.25 * tick)
 
-    def at(arr: np.ndarray, t: float) -> float:
-        idx = int(np.clip(np.searchsorted(times, t), 0, len(arr) - 1))
-        return float(arr[idx])
+    def at(t: float) -> float:
+        idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
+        return float(rms[idx])
 
-    def peak_near(arr: np.ndarray, t: float) -> float:
+    def peak_near(t: float) -> float:
         mask = (times >= t - win) & (times <= t + win)
         if not np.any(mask):
-            return at(arr, t)
-        return float(np.max(arr[mask]))
+            return at(t)
+        return float(np.max(rms[mask]))
 
     kept: list[float] = []
     for onset in np.atleast_1d(onsets).astype(float):
-        rms_ok = peak_near(rms, onset) >= 1.38 * max(at(rms, onset - half), 1e-6)
-        flux_ok = peak_near(onset_env, onset) >= 1.20 * max(at(onset_env, onset - half), 1e-6)
-        if rms_ok and flux_ok:
+        peak = peak_near(onset)
+        trough = at(onset - half)
+        if peak >= 1.38 * max(trough, 1e-6):
             kept.append(float(onset))
     return np.asarray(kept, dtype=float)
 
@@ -457,8 +445,12 @@ def merge_unconfirmed_repeats(
     for note in ordered[1:]:
         prev = merged[-1]
         gap = note.start - prev.end
-        close_pitch = abs(note.pitch - prev.pitch) <= 1
-        if close_pitch and gap <= max_gap and not is_pluck(note.start):
+        close_pitch = note.pitch == prev.pitch
+        short_jitter = (
+            abs(note.pitch - prev.pitch) <= 1
+            and min(note.duration, prev.duration) < 0.10
+        )
+        if (close_pitch or short_jitter) and gap <= max_gap and not is_pluck(note.start):
             pitch = note.pitch if note.duration > prev.duration else prev.pitch
             merged[-1] = NoteEvent(
                 start=prev.start,
