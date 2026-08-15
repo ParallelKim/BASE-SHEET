@@ -46,6 +46,14 @@ python scripts/serve_midi_viewer.py
 
 **악보** — `.musicxml`을 [MuseScore](https://musescore.org/)에서 엽니다. GarageBand/Logic/Guitar Pro도 MusicXML·MIDI를 읽습니다. 출판 탭과 비교할 때는 양자화 파일(`.quant.mid`, `.musicxml`)을 보세요. 스템과 음이 같은지는 양자화 전 `.mid` / `.preview.wav`가 맞습니다.
 
+출판 악보를 마디 단위 이미지로 보려면 (코드·가사·TAB이 한 장에 들어가게 상하를 넉넉히 자릅니다):
+
+```bash
+python scripts/crop_score_bars.py
+# tests/fixtures/score_crops/ijji/m016.png
+# tests/fixtures/score_crops/antifreeze/m042.png
+```
+
 ```bash
 python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out --bpm 128 --grid 8 --key F#
 # out/Antifreeze_bass_mixed.preview.wav

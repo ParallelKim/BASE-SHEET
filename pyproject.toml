@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "pypdfium2>=4.0", "Pillow>=10.0"]
 crepe = ["torchcrepe"]
 basic-pitch = ["basic-pitch>=0.4.0"]
 madmom = ["madmom @ git+https://github.com/CPJKU/madmom.git"]

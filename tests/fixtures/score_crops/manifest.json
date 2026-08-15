@@ -1,0 +1,1978 @@
+[
+  {
+    "song": "antifreeze",
+    "bar": 1,
+    "page": 1,
+    "system": 1,
+    "file": "antifreeze/m001.png",
+    "box": [
+      103,
+      561,
+      766,
+      1279
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 2,
+    "page": 1,
+    "system": 1,
+    "file": "antifreeze/m002.png",
+    "box": [
+      718,
+      561,
+      1184,
+      1279
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 3,
+    "page": 1,
+    "system": 1,
+    "file": "antifreeze/m003.png",
+    "box": [
+      1136,
+      561,
+      1603,
+      1279
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 4,
+    "page": 1,
+    "system": 1,
+    "file": "antifreeze/m004.png",
+    "box": [
+      1555,
+      561,
+      2022,
+      1279
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 5,
+    "page": 1,
+    "system": 2,
+    "file": "antifreeze/m005.png",
+    "box": [
+      103,
+      1233,
+      766,
+      1810
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 6,
+    "page": 1,
+    "system": 2,
+    "file": "antifreeze/m006.png",
+    "box": [
+      718,
+      1233,
+      1184,
+      1810
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 7,
+    "page": 1,
+    "system": 2,
+    "file": "antifreeze/m007.png",
+    "box": [
+      1136,
+      1233,
+      1603,
+      1810
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 8,
+    "page": 1,
+    "system": 2,
+    "file": "antifreeze/m008.png",
+    "box": [
+      1555,
+      1233,
+      2022,
+      1810
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 9,
+    "page": 1,
+    "system": 3,
+    "file": "antifreeze/m009.png",
+    "box": [
+      103,
+      1767,
+      766,
+      2341
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 10,
+    "page": 1,
+    "system": 3,
+    "file": "antifreeze/m010.png",
+    "box": [
+      718,
+      1767,
+      1184,
+      2341
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 11,
+    "page": 1,
+    "system": 3,
+    "file": "antifreeze/m011.png",
+    "box": [
+      1136,
+      1767,
+      1603,
+      2341
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 12,
+    "page": 1,
+    "system": 3,
+    "file": "antifreeze/m012.png",
+    "box": [
+      1555,
+      1767,
+      2022,
+      2341
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 13,
+    "page": 1,
+    "system": 4,
+    "file": "antifreeze/m013.png",
+    "box": [
+      103,
+      2298,
+      766,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 14,
+    "page": 1,
+    "system": 4,
+    "file": "antifreeze/m014.png",
+    "box": [
+      718,
+      2298,
+      1184,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 15,
+    "page": 1,
+    "system": 4,
+    "file": "antifreeze/m015.png",
+    "box": [
+      1136,
+      2298,
+      1603,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 16,
+    "page": 1,
+    "system": 4,
+    "file": "antifreeze/m016.png",
+    "box": [
+      1555,
+      2298,
+      2022,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 17,
+    "page": 2,
+    "system": 1,
+    "file": "antifreeze/m017.png",
+    "box": [
+      103,
+      0,
+      753,
+      824
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 18,
+    "page": 2,
+    "system": 1,
+    "file": "antifreeze/m018.png",
+    "box": [
+      705,
+      0,
+      1176,
+      824
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 19,
+    "page": 2,
+    "system": 1,
+    "file": "antifreeze/m019.png",
+    "box": [
+      1128,
+      0,
+      1599,
+      824
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 20,
+    "page": 2,
+    "system": 1,
+    "file": "antifreeze/m020.png",
+    "box": [
+      1551,
+      0,
+      2022,
+      824
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 21,
+    "page": 2,
+    "system": 2,
+    "file": "antifreeze/m021.png",
+    "box": [
+      103,
+      666,
+      753,
+      1508
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 22,
+    "page": 2,
+    "system": 2,
+    "file": "antifreeze/m022.png",
+    "box": [
+      705,
+      666,
+      1176,
+      1508
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 23,
+    "page": 2,
+    "system": 2,
+    "file": "antifreeze/m023.png",
+    "box": [
+      1128,
+      666,
+      1599,
+      1508
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 24,
+    "page": 2,
+    "system": 2,
+    "file": "antifreeze/m024.png",
+    "box": [
+      1551,
+      666,
+      2022,
+      1508
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 25,
+    "page": 2,
+    "system": 3,
+    "file": "antifreeze/m025.png",
+    "box": [
+      103,
+      1373,
+      753,
+      2240
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 26,
+    "page": 2,
+    "system": 3,
+    "file": "antifreeze/m026.png",
+    "box": [
+      705,
+      1373,
+      1176,
+      2240
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 27,
+    "page": 2,
+    "system": 3,
+    "file": "antifreeze/m027.png",
+    "box": [
+      1128,
+      1373,
+      1599,
+      2240
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 28,
+    "page": 2,
+    "system": 3,
+    "file": "antifreeze/m028.png",
+    "box": [
+      1551,
+      1373,
+      2022,
+      2240
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 29,
+    "page": 2,
+    "system": 4,
+    "file": "antifreeze/m029.png",
+    "box": [
+      103,
+      2082,
+      753,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 30,
+    "page": 2,
+    "system": 4,
+    "file": "antifreeze/m030.png",
+    "box": [
+      705,
+      2082,
+      1176,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 31,
+    "page": 2,
+    "system": 4,
+    "file": "antifreeze/m031.png",
+    "box": [
+      1128,
+      2082,
+      1599,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 32,
+    "page": 2,
+    "system": 4,
+    "file": "antifreeze/m032.png",
+    "box": [
+      1551,
+      2082,
+      2022,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 33,
+    "page": 3,
+    "system": 1,
+    "file": "antifreeze/m033.png",
+    "box": [
+      103,
+      0,
+      753,
+      1143
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 34,
+    "page": 3,
+    "system": 1,
+    "file": "antifreeze/m034.png",
+    "box": [
+      705,
+      0,
+      1176,
+      1143
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 35,
+    "page": 3,
+    "system": 1,
+    "file": "antifreeze/m035.png",
+    "box": [
+      1128,
+      0,
+      1599,
+      1143
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 36,
+    "page": 3,
+    "system": 1,
+    "file": "antifreeze/m036.png",
+    "box": [
+      1551,
+      0,
+      2022,
+      1143
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 37,
+    "page": 3,
+    "system": 2,
+    "file": "antifreeze/m037.png",
+    "box": [
+      103,
+      1035,
+      753,
+      2222
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 38,
+    "page": 3,
+    "system": 2,
+    "file": "antifreeze/m038.png",
+    "box": [
+      705,
+      1035,
+      1176,
+      2222
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 39,
+    "page": 3,
+    "system": 2,
+    "file": "antifreeze/m039.png",
+    "box": [
+      1128,
+      1035,
+      1599,
+      2222
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 40,
+    "page": 3,
+    "system": 2,
+    "file": "antifreeze/m040.png",
+    "box": [
+      1551,
+      1035,
+      2022,
+      2222
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 41,
+    "page": 3,
+    "system": 3,
+    "file": "antifreeze/m041.png",
+    "box": [
+      103,
+      2093,
+      753,
+      2935
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 42,
+    "page": 3,
+    "system": 3,
+    "file": "antifreeze/m042.png",
+    "box": [
+      705,
+      2093,
+      1176,
+      2935
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 43,
+    "page": 3,
+    "system": 3,
+    "file": "antifreeze/m043.png",
+    "box": [
+      1128,
+      2093,
+      1599,
+      2935
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 44,
+    "page": 3,
+    "system": 3,
+    "file": "antifreeze/m044.png",
+    "box": [
+      1551,
+      2093,
+      2022,
+      2935
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 45,
+    "page": 4,
+    "system": 1,
+    "file": "antifreeze/m045.png",
+    "box": [
+      103,
+      0,
+      752,
+      738
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 46,
+    "page": 4,
+    "system": 1,
+    "file": "antifreeze/m046.png",
+    "box": [
+      704,
+      0,
+      1174,
+      738
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 47,
+    "page": 4,
+    "system": 1,
+    "file": "antifreeze/m047.png",
+    "box": [
+      1126,
+      0,
+      1596,
+      738
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 48,
+    "page": 4,
+    "system": 1,
+    "file": "antifreeze/m048.png",
+    "box": [
+      1548,
+      0,
+      2022,
+      738
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 49,
+    "page": 4,
+    "system": 2,
+    "file": "antifreeze/m049.png",
+    "box": [
+      103,
+      593,
+      752,
+      1350
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 50,
+    "page": 4,
+    "system": 2,
+    "file": "antifreeze/m050.png",
+    "box": [
+      704,
+      593,
+      1174,
+      1350
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 51,
+    "page": 4,
+    "system": 2,
+    "file": "antifreeze/m051.png",
+    "box": [
+      1126,
+      593,
+      1596,
+      1350
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 52,
+    "page": 4,
+    "system": 2,
+    "file": "antifreeze/m052.png",
+    "box": [
+      1548,
+      593,
+      2022,
+      1350
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 53,
+    "page": 4,
+    "system": 3,
+    "file": "antifreeze/m053.png",
+    "box": [
+      103,
+      1229,
+      752,
+      1988
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 54,
+    "page": 4,
+    "system": 3,
+    "file": "antifreeze/m054.png",
+    "box": [
+      704,
+      1229,
+      1174,
+      1988
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 55,
+    "page": 4,
+    "system": 3,
+    "file": "antifreeze/m055.png",
+    "box": [
+      1126,
+      1229,
+      1596,
+      1988
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 56,
+    "page": 4,
+    "system": 3,
+    "file": "antifreeze/m056.png",
+    "box": [
+      1548,
+      1229,
+      2022,
+      1988
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 57,
+    "page": 4,
+    "system": 4,
+    "file": "antifreeze/m057.png",
+    "box": [
+      103,
+      1841,
+      752,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 58,
+    "page": 4,
+    "system": 4,
+    "file": "antifreeze/m058.png",
+    "box": [
+      704,
+      1841,
+      1174,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 59,
+    "page": 4,
+    "system": 4,
+    "file": "antifreeze/m059.png",
+    "box": [
+      1126,
+      1841,
+      1596,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 60,
+    "page": 4,
+    "system": 4,
+    "file": "antifreeze/m060.png",
+    "box": [
+      1548,
+      1841,
+      2022,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 61,
+    "page": 5,
+    "system": 1,
+    "file": "antifreeze/m061.png",
+    "box": [
+      103,
+      0,
+      725,
+      706
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 62,
+    "page": 5,
+    "system": 1,
+    "file": "antifreeze/m062.png",
+    "box": [
+      677,
+      0,
+      1213,
+      706
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 63,
+    "page": 5,
+    "system": 1,
+    "file": "antifreeze/m063.png",
+    "box": [
+      1165,
+      0,
+      1601,
+      706
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 64,
+    "page": 5,
+    "system": 1,
+    "file": "antifreeze/m064.png",
+    "box": [
+      1553,
+      0,
+      2014,
+      706
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 65,
+    "page": 5,
+    "system": 2,
+    "file": "antifreeze/m065.png",
+    "box": [
+      103,
+      642,
+      725,
+      1105
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 66,
+    "page": 5,
+    "system": 2,
+    "file": "antifreeze/m066.png",
+    "box": [
+      677,
+      642,
+      1213,
+      1105
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 67,
+    "page": 5,
+    "system": 2,
+    "file": "antifreeze/m067.png",
+    "box": [
+      1165,
+      642,
+      1601,
+      1105
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 68,
+    "page": 5,
+    "system": 2,
+    "file": "antifreeze/m068.png",
+    "box": [
+      1553,
+      642,
+      2014,
+      1105
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 69,
+    "page": 5,
+    "system": 3,
+    "file": "antifreeze/m069.png",
+    "box": [
+      103,
+      966,
+      725,
+      1709
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 70,
+    "page": 5,
+    "system": 3,
+    "file": "antifreeze/m070.png",
+    "box": [
+      677,
+      966,
+      1213,
+      1709
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 71,
+    "page": 5,
+    "system": 3,
+    "file": "antifreeze/m071.png",
+    "box": [
+      1165,
+      966,
+      1601,
+      1709
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 72,
+    "page": 5,
+    "system": 3,
+    "file": "antifreeze/m072.png",
+    "box": [
+      1553,
+      966,
+      2014,
+      1709
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 73,
+    "page": 5,
+    "system": 4,
+    "file": "antifreeze/m073.png",
+    "box": [
+      103,
+      1569,
+      725,
+      2326
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 74,
+    "page": 5,
+    "system": 4,
+    "file": "antifreeze/m074.png",
+    "box": [
+      677,
+      1569,
+      1213,
+      2326
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 75,
+    "page": 5,
+    "system": 4,
+    "file": "antifreeze/m075.png",
+    "box": [
+      1165,
+      1569,
+      1601,
+      2326
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 76,
+    "page": 5,
+    "system": 4,
+    "file": "antifreeze/m076.png",
+    "box": [
+      1553,
+      1569,
+      2014,
+      2326
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 77,
+    "page": 5,
+    "system": 5,
+    "file": "antifreeze/m077.png",
+    "box": [
+      103,
+      2170,
+      725,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 78,
+    "page": 5,
+    "system": 5,
+    "file": "antifreeze/m078.png",
+    "box": [
+      677,
+      2170,
+      1213,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 79,
+    "page": 5,
+    "system": 5,
+    "file": "antifreeze/m079.png",
+    "box": [
+      1165,
+      2170,
+      1601,
+      2947
+    ]
+  },
+  {
+    "song": "antifreeze",
+    "bar": 80,
+    "page": 5,
+    "system": 5,
+    "file": "antifreeze/m080.png",
+    "box": [
+      1553,
+      2170,
+      2014,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 1,
+    "page": 1,
+    "system": 1,
+    "file": "ijji/m001.png",
+    "box": [
+      103,
+      450,
+      716,
+      1207
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 2,
+    "page": 1,
+    "system": 1,
+    "file": "ijji/m002.png",
+    "box": [
+      668,
+      450,
+      1151,
+      1207
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 3,
+    "page": 1,
+    "system": 1,
+    "file": "ijji/m003.png",
+    "box": [
+      1103,
+      450,
+      1586,
+      1207
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 4,
+    "page": 1,
+    "system": 1,
+    "file": "ijji/m004.png",
+    "box": [
+      1538,
+      450,
+      2022,
+      1207
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 5,
+    "page": 1,
+    "system": 2,
+    "file": "ijji/m005.png",
+    "box": [
+      103,
+      1095,
+      716,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 6,
+    "page": 1,
+    "system": 2,
+    "file": "ijji/m006.png",
+    "box": [
+      668,
+      1095,
+      1151,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 7,
+    "page": 1,
+    "system": 2,
+    "file": "ijji/m007.png",
+    "box": [
+      1103,
+      1095,
+      1586,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 8,
+    "page": 1,
+    "system": 2,
+    "file": "ijji/m008.png",
+    "box": [
+      1538,
+      1095,
+      2022,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 9,
+    "page": 1,
+    "system": 3,
+    "file": "ijji/m009.png",
+    "box": [
+      103,
+      1669,
+      716,
+      2348
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 10,
+    "page": 1,
+    "system": 3,
+    "file": "ijji/m010.png",
+    "box": [
+      668,
+      1669,
+      1151,
+      2348
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 11,
+    "page": 1,
+    "system": 3,
+    "file": "ijji/m011.png",
+    "box": [
+      1103,
+      1669,
+      1586,
+      2348
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 12,
+    "page": 1,
+    "system": 3,
+    "file": "ijji/m012.png",
+    "box": [
+      1538,
+      1669,
+      2022,
+      2348
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 13,
+    "page": 1,
+    "system": 4,
+    "file": "ijji/m013.png",
+    "box": [
+      103,
+      2248,
+      716,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 14,
+    "page": 1,
+    "system": 4,
+    "file": "ijji/m014.png",
+    "box": [
+      668,
+      2248,
+      1151,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 15,
+    "page": 1,
+    "system": 4,
+    "file": "ijji/m015.png",
+    "box": [
+      1103,
+      2248,
+      1586,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 16,
+    "page": 1,
+    "system": 4,
+    "file": "ijji/m016.png",
+    "box": [
+      1538,
+      2248,
+      2022,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 17,
+    "page": 2,
+    "system": 1,
+    "file": "ijji/m017.png",
+    "box": [
+      103,
+      0,
+      716,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 18,
+    "page": 2,
+    "system": 1,
+    "file": "ijji/m018.png",
+    "box": [
+      668,
+      0,
+      1151,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 19,
+    "page": 2,
+    "system": 1,
+    "file": "ijji/m019.png",
+    "box": [
+      1103,
+      0,
+      1586,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 20,
+    "page": 2,
+    "system": 1,
+    "file": "ijji/m020.png",
+    "box": [
+      1538,
+      0,
+      2022,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 21,
+    "page": 2,
+    "system": 2,
+    "file": "ijji/m021.png",
+    "box": [
+      103,
+      594,
+      716,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 22,
+    "page": 2,
+    "system": 2,
+    "file": "ijji/m022.png",
+    "box": [
+      668,
+      594,
+      1151,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 23,
+    "page": 2,
+    "system": 2,
+    "file": "ijji/m023.png",
+    "box": [
+      1103,
+      594,
+      1586,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 24,
+    "page": 2,
+    "system": 2,
+    "file": "ijji/m024.png",
+    "box": [
+      1538,
+      594,
+      2022,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 25,
+    "page": 2,
+    "system": 3,
+    "file": "ijji/m025.png",
+    "box": [
+      103,
+      1148,
+      716,
+      1783
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 26,
+    "page": 2,
+    "system": 3,
+    "file": "ijji/m026.png",
+    "box": [
+      668,
+      1148,
+      1151,
+      1783
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 27,
+    "page": 2,
+    "system": 3,
+    "file": "ijji/m027.png",
+    "box": [
+      1103,
+      1148,
+      1586,
+      1783
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 28,
+    "page": 2,
+    "system": 3,
+    "file": "ijji/m028.png",
+    "box": [
+      1538,
+      1148,
+      2022,
+      1783
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 29,
+    "page": 2,
+    "system": 4,
+    "file": "ijji/m029.png",
+    "box": [
+      103,
+      1696,
+      716,
+      2337
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 30,
+    "page": 2,
+    "system": 4,
+    "file": "ijji/m030.png",
+    "box": [
+      668,
+      1696,
+      1151,
+      2337
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 31,
+    "page": 2,
+    "system": 4,
+    "file": "ijji/m031.png",
+    "box": [
+      1103,
+      1696,
+      1586,
+      2337
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 32,
+    "page": 2,
+    "system": 4,
+    "file": "ijji/m032.png",
+    "box": [
+      1538,
+      1696,
+      2022,
+      2337
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 33,
+    "page": 2,
+    "system": 5,
+    "file": "ijji/m033.png",
+    "box": [
+      103,
+      2248,
+      716,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 34,
+    "page": 2,
+    "system": 5,
+    "file": "ijji/m034.png",
+    "box": [
+      668,
+      2248,
+      1151,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 35,
+    "page": 2,
+    "system": 5,
+    "file": "ijji/m035.png",
+    "box": [
+      1103,
+      2248,
+      1586,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 36,
+    "page": 2,
+    "system": 5,
+    "file": "ijji/m036.png",
+    "box": [
+      1538,
+      2248,
+      2022,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 37,
+    "page": 3,
+    "system": 1,
+    "file": "ijji/m037.png",
+    "box": [
+      103,
+      0,
+      716,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 38,
+    "page": 3,
+    "system": 1,
+    "file": "ijji/m038.png",
+    "box": [
+      668,
+      0,
+      1151,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 39,
+    "page": 3,
+    "system": 1,
+    "file": "ijji/m039.png",
+    "box": [
+      1103,
+      0,
+      1586,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 40,
+    "page": 3,
+    "system": 1,
+    "file": "ijji/m040.png",
+    "box": [
+      1538,
+      0,
+      2022,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 41,
+    "page": 3,
+    "system": 2,
+    "file": "ijji/m041.png",
+    "box": [
+      103,
+      596,
+      716,
+      1231
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 42,
+    "page": 3,
+    "system": 2,
+    "file": "ijji/m042.png",
+    "box": [
+      668,
+      596,
+      1151,
+      1231
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 43,
+    "page": 3,
+    "system": 2,
+    "file": "ijji/m043.png",
+    "box": [
+      1103,
+      596,
+      1586,
+      1231
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 44,
+    "page": 3,
+    "system": 2,
+    "file": "ijji/m044.png",
+    "box": [
+      1538,
+      596,
+      2022,
+      1231
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 45,
+    "page": 3,
+    "system": 3,
+    "file": "ijji/m045.png",
+    "box": [
+      103,
+      1145,
+      716,
+      1785
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 46,
+    "page": 3,
+    "system": 3,
+    "file": "ijji/m046.png",
+    "box": [
+      668,
+      1145,
+      1151,
+      1785
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 47,
+    "page": 3,
+    "system": 3,
+    "file": "ijji/m047.png",
+    "box": [
+      1103,
+      1145,
+      1586,
+      1785
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 48,
+    "page": 3,
+    "system": 3,
+    "file": "ijji/m048.png",
+    "box": [
+      1538,
+      1145,
+      2022,
+      1785
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 49,
+    "page": 3,
+    "system": 4,
+    "file": "ijji/m049.png",
+    "box": [
+      103,
+      1723,
+      716,
+      2334
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 50,
+    "page": 3,
+    "system": 4,
+    "file": "ijji/m050.png",
+    "box": [
+      668,
+      1723,
+      1151,
+      2334
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 51,
+    "page": 3,
+    "system": 4,
+    "file": "ijji/m051.png",
+    "box": [
+      1103,
+      1723,
+      1586,
+      2334
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 52,
+    "page": 3,
+    "system": 4,
+    "file": "ijji/m052.png",
+    "box": [
+      1538,
+      1723,
+      2022,
+      2334
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 53,
+    "page": 3,
+    "system": 5,
+    "file": "ijji/m053.png",
+    "box": [
+      103,
+      2248,
+      716,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 54,
+    "page": 3,
+    "system": 5,
+    "file": "ijji/m054.png",
+    "box": [
+      668,
+      2248,
+      1151,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 55,
+    "page": 3,
+    "system": 5,
+    "file": "ijji/m055.png",
+    "box": [
+      1103,
+      2248,
+      1586,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 56,
+    "page": 3,
+    "system": 5,
+    "file": "ijji/m056.png",
+    "box": [
+      1538,
+      2248,
+      2022,
+      2947
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 57,
+    "page": 4,
+    "system": 1,
+    "file": "ijji/m057.png",
+    "box": [
+      103,
+      0,
+      716,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 58,
+    "page": 4,
+    "system": 1,
+    "file": "ijji/m058.png",
+    "box": [
+      668,
+      0,
+      1149,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 59,
+    "page": 4,
+    "system": 1,
+    "file": "ijji/m059.png",
+    "box": [
+      1101,
+      0,
+      1583,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 60,
+    "page": 4,
+    "system": 1,
+    "file": "ijji/m060.png",
+    "box": [
+      1535,
+      0,
+      2020,
+      684
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 61,
+    "page": 4,
+    "system": 2,
+    "file": "ijji/m061.png",
+    "box": [
+      103,
+      620,
+      716,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 62,
+    "page": 4,
+    "system": 2,
+    "file": "ijji/m062.png",
+    "box": [
+      668,
+      620,
+      1149,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 63,
+    "page": 4,
+    "system": 2,
+    "file": "ijji/m063.png",
+    "box": [
+      1101,
+      620,
+      1583,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 64,
+    "page": 4,
+    "system": 2,
+    "file": "ijji/m064.png",
+    "box": [
+      1535,
+      620,
+      2020,
+      1235
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 65,
+    "page": 4,
+    "system": 3,
+    "file": "ijji/m065.png",
+    "box": [
+      103,
+      1145,
+      716,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 66,
+    "page": 4,
+    "system": 3,
+    "file": "ijji/m066.png",
+    "box": [
+      668,
+      1145,
+      1149,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 67,
+    "page": 4,
+    "system": 3,
+    "file": "ijji/m067.png",
+    "box": [
+      1101,
+      1145,
+      1583,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 68,
+    "page": 4,
+    "system": 3,
+    "file": "ijji/m068.png",
+    "box": [
+      1535,
+      1145,
+      2020,
+      1786
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 69,
+    "page": 4,
+    "system": 4,
+    "file": "ijji/m069.png",
+    "box": [
+      103,
+      1696,
+      716,
+      2442
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 70,
+    "page": 4,
+    "system": 4,
+    "file": "ijji/m070.png",
+    "box": [
+      668,
+      1696,
+      1149,
+      2442
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 71,
+    "page": 4,
+    "system": 4,
+    "file": "ijji/m071.png",
+    "box": [
+      1101,
+      1696,
+      1583,
+      2442
+    ]
+  },
+  {
+    "song": "ijji",
+    "bar": 72,
+    "page": 4,
+    "system": 4,
+    "file": "ijji/m072.png",
+    "box": [
+      1535,
+      1696,
+      2020,
+      2442
+    ]
+  }
+]
