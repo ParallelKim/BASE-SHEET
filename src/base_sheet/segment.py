@@ -273,12 +273,8 @@ def split_repeats_on_meter(
         while t <= note.end - min_dur + 1e-9:
             peak, peak_t = _max_near(rms, t)
             flux, flux_t = _max_near(onset_env, t)
-            flux_trough = _at(onset_env, t - half)
-            attack_flux = max(_max_near(onset_env, note.start)[0], 1e-6)
-            reattack = (
-                flux >= 1.40 * max(flux_trough, 1e-6)
-                and flux >= 0.22 * attack_flux
-            )
+            trough = _at(rms, t - half)
+            reattack = peak >= 1.25 * max(trough, 1e-6) and peak >= 0.13 * attack
             if reattack:
                 cut = flux_t if flux >= env_floor else peak_t
                 if note.start + min_dur <= cut <= note.end - min_dur:
@@ -504,7 +500,7 @@ def split_repeated_pitches(
 
     tick = seconds_per_tick(bpm, grid)
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
-    onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
+    onsets = _nms_times(onsets, max(0.09, 0.42 * tick))
     onsets = _confirmed_reattacks(y, sr, onsets, tick)
     split = _seed_holes_at_onsets(notes, onsets, tick, y=y, sr=sr)
     split = split_at_onsets(split, onsets, min_duration=min_duration)

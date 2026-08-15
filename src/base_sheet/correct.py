@@ -216,18 +216,28 @@ def maybe_flageolet_pitch(mag: np.ndarray, freqs: np.ndarray, midi_pitch: int) -
     """If the sounding tone is a high natural harmonic, keep that pitch.
 
     CREPE often unvoices flageolet notes or reports a low string residual.
-    A real open-string note still has energy an octave below the peak.
+    Slap transients are broadband — only lift a *tonal* peak at MIDI ≥ 55
+    with almost no energy an octave below.
     """
     import librosa
 
     peak_midi = midi_from_spectrum_peak(mag, freqs)
-    if peak_midi is None or peak_midi < 50:
+    if peak_midi is None or peak_midi < 55:
         return int(midi_pitch)
     f_pk = float(librosa.midi_to_hz(peak_midi))
-    e_pk = _band_energy(mag, freqs, f_pk)
+    e_pk = _band_energy(mag, freqs, f_pk, rel_bw=0.04)
     e_half = _band_energy(mag, freqs, 0.5 * f_pk)
     e_third = _band_energy(mag, freqs, f_pk / 3.0)
-    if e_pk >= 1e-8 and e_half < 0.28 * e_pk and e_third < 0.32 * e_pk:
+    band = (freqs >= 80.0) & (freqs <= 430.0)
+    narrow = (freqs >= f_pk * 0.97) & (freqs <= f_pk * 1.03)
+    total = float(np.sum(mag[band])) + 1e-9
+    tonality = float(np.sum(mag[narrow])) / total
+    if (
+        e_pk >= 1e-8
+        and tonality >= 0.22
+        and e_half < 0.22 * e_pk
+        and e_third < 0.28 * e_pk
+    ):
         return peak_midi
     return int(midi_pitch)
 
