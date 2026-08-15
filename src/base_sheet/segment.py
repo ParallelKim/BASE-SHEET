@@ -404,6 +404,28 @@ def _confirmed_reattacks(
     return np.asarray(kept, dtype=float)
 
 
+def detect_flux_peaks(
+    y: np.ndarray,
+    sr: int | float,
+    tick: float,
+) -> np.ndarray:
+    """Strong low-band flux peaks, spaced to allow slap 16ths."""
+    import librosa
+
+    hop = 256
+    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=2048, hop_length=hop))
+    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=2048)
+    band = (freqs >= 50.0) & (freqs <= 1800.0)
+    env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
+    times = librosa.frames_to_time(np.arange(len(env)), sr=sr, hop_length=hop)
+    distance = max(2, int(0.38 * tick * float(sr) / hop))
+    prom = 0.38 * float(np.percentile(env, 90) + 1e-9)
+    peaks, _ = find_peaks(env, prominence=prom, distance=distance)
+    if peaks.size == 0:
+        return np.zeros(0, dtype=float)
+    return times[peaks].astype(float)
+
+
 def merge_unconfirmed_repeats(
     y: np.ndarray,
     sr: int | float,
@@ -479,6 +501,14 @@ def split_repeated_pitches(
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
     onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
     onsets = _confirmed_reattacks(y, sr, onsets, tick)
+    flux_peaks = detect_flux_peaks(y, sr, tick)
+    if flux_peaks.size:
+        extra = []
+        for t in flux_peaks:
+            if onsets.size == 0 or np.min(np.abs(onsets - t)) > 0.08:
+                extra.append(float(t))
+        if extra:
+            onsets = np.sort(np.concatenate([onsets, np.asarray(extra, dtype=float)]))
     split = _seed_holes_at_onsets(notes, onsets, tick, y=y, sr=sr)
     split = split_at_onsets(split, onsets, min_duration=min_duration)
     long: list[NoteEvent] = []

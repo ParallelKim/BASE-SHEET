@@ -268,6 +268,14 @@ def correct_note_octaves(
         else:
             mag = np.median(stft[:, mask], axis=1)
         pitch = choose_octave_from_spectrum(mag, freqs, note.pitch)
+        lifted = maybe_flageolet_pitch(mag, freqs, pitch)
+        if lifted >= 55 and lifted != pitch:
+            import librosa
+
+            e_cur = _band_energy(mag, freqs, float(librosa.midi_to_hz(pitch)))
+            e_new = _band_energy(mag, freqs, float(librosa.midi_to_hz(lifted)))
+            if e_new >= 3.5 * max(e_cur, 1e-9):
+                pitch = lifted
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )
