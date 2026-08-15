@@ -14,13 +14,18 @@ class BarSpec:
     ``lock=score``: printed TAB/chords; these hits are scored.
     ``lock=approx``: print not locked. Rhythm is ``skip`` — the bar keeps
     its place on the timeline but must not invent pitches to grade against.
+
+    ``rhythm=hits``: irregular fill. ``events`` is
+    ``(eighth, dur_eighths, pitch)`` in 0–8 eighths; ``pitches`` is that
+    sequence (for snapshots).
     """
 
     written: int
-    rhythm: str  # rest | eight | pair | whole | half | skip
+    rhythm: str  # rest | eight | pair | whole | half | skip | hits
     pitches: tuple[int, ...]
     lock: str
     comment: str = ""
+    events: tuple[tuple[float, float, int], ...] = ()
 
 
 def spec_hits(spec: BarSpec, play_bar: int) -> list[Hit]:
@@ -42,6 +47,12 @@ def spec_hits(spec: BarSpec, play_bar: int) -> list[Hit]:
     if spec.rhythm == "half":
         assert len(spec.pitches) == 1, spec
         return [sustain(spec.pitches[0], play_bar, 0.0, 4.0)]
+    if spec.rhythm == "hits":
+        assert spec.events, spec
+        return [
+            Hit(play_bar, float(eighth), float(dur), int(pitch))
+            for eighth, dur, pitch in spec.events
+        ]
     raise ValueError(spec.rhythm)
 
 
@@ -58,3 +69,6 @@ def require_contiguous(specs: list[BarSpec]) -> None:
             assert spec.rhythm == "skip" and spec.pitches == (), spec
         if spec.lock == "score":
             assert spec.rhythm != "skip", spec
+        if spec.rhythm == "hits":
+            assert spec.events, spec
+            assert spec.pitches == tuple(p for _, _, p in spec.events), spec

@@ -6,13 +6,14 @@ from base_sheet.pipeline import run
 from ijji_eval import fixture_path, score_ijji
 from ijji_truth import SCORE_BPM, SCORE_KEY, SECTIONS
 
-# Pitch floors only on lock=score bars. coda_b is skip/approx.
+# Pitch floors only on lock=score bars. Fills/coda_b are now print-locked.
 SECTION_FLOORS = {
     "verse": (0.50, 0.70),
     "chorus": (0.40, 0.65),
     "inst": (0.35, 0.60),
     "drive": (0.35, 0.60),
     "coda_a": (0.30, 0.55),
+    "coda_b": (0.25, 0.50),
 }
 
 
@@ -43,10 +44,11 @@ def test_ijji_tacet_has_no_tab_hits(ijji_run):
 
 
 @pytest.mark.slow
-def test_ijji_unscored_coda_has_no_truth_hits(ijji_run):
-    """분할: 악보 미확정 코다는 가짜 근음으로 채점하지 않는다."""
+def test_ijji_coda_b_is_scored_from_print(ijji_run):
+    """분할: 코다 후반(65–72)도 출판 탭 피치로 채점한다."""
     _result, song = ijji_run
-    assert song.sections["coda_b"].n_hits == 0
+    sc = song.sections["coda_b"]
+    assert sc.n_hits > 0
 
 
 @pytest.mark.slow
@@ -73,7 +75,7 @@ def test_ijji_integration_all_sections(ijji_run):
     """통합: 타셋 이후 전 섹션이 한 곡으로 이어지고 청취 하한을 통과."""
     result, song = ijji_run
     assert set(song.sections) == set(SECTIONS)
-    assert set(SECTION_FLOORS) | {"tacet", "coda_b"} == set(SECTIONS)
+    assert set(SECTION_FLOORS) | {"tacet"} == set(SECTIONS)
     assert song.overall.n_hits == sum(sc.n_hits for sc in song.sections.values())
     assert song.overall.pitch_chroma >= 0.65
     assert result.listen is not None

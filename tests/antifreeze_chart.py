@@ -1,12 +1,13 @@
 """Antifreeze bass chart: one row per written bar (akbobada, 5 pages).
 
-MIDI: B1=35 C#2=37 F#1=30 E1=28 A#1=34 G#1=32 D#2=39.
+MIDI: B1=35 C#2=37 F#1=30 E1=28 A#1=34 G#1=32 D#2=39 E2=40 A2=45.
 PLAY is 1-based written bars in performance order (voltas + chorus 2x).
 """
 
 from chart_table import BarSpec
 
 B, CS, FS, EN, AS, GS, DS = 35, 37, 30, 28, 34, 32, 39
+E2, A2 = 40, 45
 
 
 def _eight(w: int, p: int, comment: str, lock: str = "score") -> BarSpec:
@@ -15,6 +16,22 @@ def _eight(w: int, p: int, comment: str, lock: str = "score") -> BarSpec:
 
 def _skip(w: int, comment: str) -> BarSpec:
     return BarSpec(w, "skip", (), "approx", comment)
+
+
+def _hits(w: int, events: list[tuple[float, float, int]], comment: str) -> BarSpec:
+    ev = tuple((float(e), float(d), int(p)) for e, d, p in events)
+    return BarSpec(w, "hits", tuple(p for _, _, p in ev), "score", comment, events=ev)
+
+
+def _eights_from_frets(w: int, frets: list[int], fmap: dict[int, int], comment: str) -> BarSpec:
+    """One printed TAB digit per eighth; remaining eighths are omitted."""
+    events = []
+    for i, f in enumerate(frets):
+        if f not in fmap:
+            continue
+        events.append((float(i), 1.0, fmap[f]))
+    assert events, (w, frets)
+    return _hits(w, events, comment)
 
 
 def _bars() -> list[BarSpec]:
@@ -33,12 +50,56 @@ def _bars() -> list[BarSpec]:
     add_eights(33, [B, AS, B, AS, B, AS, B], "p.3 vamp B / A#m7")
     rows.append(_eight(40, GS, "1st ending G#m7"))
     rows.append(_eight(41, FS, "1st ending F#"))
-    rows.append(_skip(42, "1st ending last bar not locked — not scored"))
+    rows.append(_eight(42, FS, "1st ending last bar F# 8ths (TAB 2s)"))
     rows.append(_eight(43, GS, "2nd ending G#m7"))
     add_eights(44, [FS, FS, FS, FS], "p.4 F# pedal")
     add_eights(48, [DS, GS, CS, FS] * 3, "chorus loop | D#m | G# | C#7 | F# |")
-    for w in range(60, 81):
-        rows.append(_skip(w, "p.5 fills/outro not locked — not scored"))
+
+    # p.5 mm.60–80: another D# G# C# F# cycle; some bars are fills.
+    loop = [DS, GS, CS, FS]
+    # 60–63: TAB 6/4/beams/2 = straight loop
+    add_eights(60, loop, "p.5 loop | D#m | G# | C#7 | F# |")
+
+    # 64 DS fill: TAB 6-8-6-6
+    rows.append(
+        _eights_from_frets(64, [6, 8, 6, 6], {6: DS, 8: E2}, "p.5 D# fill 6-8-6-6")
+    )
+    # 65 GS fill: TAB 8-6-4-6-4-4-4 (drop OCR '3')
+    rows.append(
+        _eights_from_frets(
+            65, [8, 6, 4, 6, 4, 4, 4], {8: E2, 6: DS, 4: GS}, "p.5 G# fill"
+        )
+    )
+    # 66 CS fill: TAB 6-8-8-6-4-4
+    rows.append(
+        _eights_from_frets(
+            66, [6, 8, 8, 6, 4, 4], {6: DS, 8: E2, 4: CS}, "p.5 C# fill"
+        )
+    )
+    rows.append(_skip(67, "p.5 TAB not locked"))
+    # 68 DS fill: TAB 4-4-6-4-6-4-6-4
+    rows.append(
+        _eights_from_frets(
+            68, [4, 4, 6, 4, 6, 4, 6, 4], {4: GS, 6: DS}, "p.5 D#/G# fill 4-6"
+        )
+    )
+    rows.append(_skip(69, "p.5 TAB not locked"))
+    rows.append(_eight(70, CS, "p.5 C# 8ths (TAB 4s)"))
+    rows.append(_skip(71, "p.5 TAB not locked"))
+    rows.append(_skip(72, "p.5 TAB not locked"))
+    rows.append(_eight(73, GS, "p.5 G# 8ths (TAB 4s)"))
+    rows.append(_skip(74, "p.5 TAB not locked"))
+    rows.append(_eight(75, FS, "p.5 F# 8ths (TAB 2s)"))
+    for w in (76, 77, 78):
+        rows.append(_skip(w, "p.5 TAB not locked"))
+    rows.append(
+        _hits(
+            79,
+            [(0.0, 2.0, EN), (2.0, 2.0, EN), (4.0, 4.0, FS)],
+            "p.5 outro 0-0-2",
+        )
+    )
+    rows.append(_skip(80, "p.5 final bar TAB not locked"))
     return rows
 
 
@@ -83,12 +144,25 @@ LOCK_SNAPSHOT: dict[int, tuple[str, tuple[int, ...]]] = {
     34: ("eight", (AS,)),
     40: ("eight", (GS,)),
     41: ("eight", (FS,)),
+    42: ("eight", (FS,)),
     43: ("eight", (GS,)),
     44: ("eight", (FS,)),
     48: ("eight", (DS,)),
     49: ("eight", (GS,)),
     50: ("eight", (CS,)),
     51: ("eight", (FS,)),
+    60: ("eight", (DS,)),
+    61: ("eight", (GS,)),
+    62: ("eight", (CS,)),
+    63: ("eight", (FS,)),
+    64: ("hits", (DS, E2, DS, DS)),
+    65: ("hits", (E2, DS, GS, DS, GS, GS, GS)),
+    66: ("hits", (DS, E2, E2, DS, CS, CS)),
+    68: ("hits", (GS, GS, DS, GS, DS, GS, DS, GS)),
+    70: ("eight", (CS,)),
+    73: ("eight", (GS,)),
+    75: ("eight", (FS,)),
+    79: ("hits", (EN, EN, FS)),
 }
 
 PLAY_SNAPSHOT_PREFIX = list(range(1, 33)) + list(range(33, 43))
