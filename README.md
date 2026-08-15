@@ -36,6 +36,14 @@ python -m base_sheet path/to/bass.m4a -o ./out --engine basic-pitch --snap-key -
 
 **듣기** — 스템과 같은지 보려면 `.compare.wav`를 헤드폰으로 재생하세요. 왼쪽이 원본 베이스, 오른쪽이 분석 MIDI입니다. MIDI만 들으려면 `.preview.wav` 또는 DAW/VLC에 `.mid`를 넣으세요. (GM 일렉트릭 베이스, 프로그램 33)
 
+브라우저에서 `.mid` 피아노롤·재생:
+
+```bash
+python scripts/serve_midi_viewer.py
+# http://127.0.0.1:8765/web/index.html
+# out/*.mid 가 있으면 목록에서 고르고, 없면 파일을 열거나 끌어다 놓습니다.
+```
+
 **악보** — `.musicxml`을 [MuseScore](https://musescore.org/)에서 엽니다. GarageBand/Logic/Guitar Pro도 MusicXML·MIDI를 읽습니다. 출판 탭과 비교할 때는 양자화 파일(`.quant.mid`, `.musicxml`)을 보세요. 스템과 음이 같은지는 양자화 전 `.mid` / `.preview.wav`가 맞습니다.
 
 ```bash
