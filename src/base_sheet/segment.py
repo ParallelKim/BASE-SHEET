@@ -274,7 +274,7 @@ def split_repeats_on_meter(
             peak, peak_t = _max_near(rms, t)
             flux, flux_t = _max_near(onset_env, t)
             trough = _at(rms, t - half)
-            reattack = peak >= 1.38 * max(trough, 1e-6) and peak >= 0.20 * attack
+            reattack = peak >= 1.25 * max(trough, 1e-6) and peak >= 0.13 * attack
             if reattack:
                 cut = flux_t if flux >= env_floor else peak_t
                 if note.start + min_dur <= cut <= note.end - min_dur:
@@ -388,7 +388,7 @@ def _confirmed_reattacks(
     for onset in np.atleast_1d(onsets).astype(float):
         peak = peak_near(onset)
         trough = at(onset - half)
-        if peak >= 1.38 * max(trough, 1e-6):
+        if peak >= 1.28 * max(trough, 1e-6):
             kept.append(float(onset))
     return np.asarray(kept, dtype=float)
 
@@ -399,14 +399,13 @@ def merge_unconfirmed_repeats(
     notes: list[NoteEvent],
     tick: float,
     *,
-    ratio: float = 1.38,
+    ratio: float = 1.12,
     max_gap: float = 0.06,
 ) -> list[NoteEvent]:
     """Glue fragments cut on f0 wobble or envelope shimmer, not a pluck.
 
-    Over-segmentation shows up as extra onsets *inside* a ground-truth note.
-    CREPE also jitters ±1 semitone on a held pitch; those joins are merged
-    unless RMS *and* spectral flux both re-peak like a real attack.
+    Split stays strict; merge is timid. Any RMS re-peak ≥ 1.12× keeps an
+    8th-note attack. Only dead shimmer and sub-100 ms ±1 jitter get glued.
     """
     import librosa
 
@@ -414,31 +413,22 @@ def merge_unconfirmed_repeats(
         return list(notes)
     hop = 256
     rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=512)[0]
-    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=2048, hop_length=hop))
-    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=2048)
-    band = (freqs >= 50.0) & (freqs <= 1800.0)
-    onset_env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
-    n_frames = min(len(rms), len(onset_env))
-    rms = rms[:n_frames]
-    onset_env = onset_env[:n_frames]
-    times = librosa.frames_to_time(np.arange(n_frames), sr=sr, hop_length=hop)
+    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
     half = 0.45 * tick
     win = min(0.06, 0.25 * tick)
 
-    def at(arr: np.ndarray, t: float) -> float:
-        idx = int(np.clip(np.searchsorted(times, t), 0, len(arr) - 1))
-        return float(arr[idx])
+    def at(t: float) -> float:
+        idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
+        return float(rms[idx])
 
-    def peak_near(arr: np.ndarray, t: float) -> float:
+    def peak_near(t: float) -> float:
         mask = (times >= t - win) & (times <= t + win)
         if not np.any(mask):
-            return at(arr, t)
-        return float(np.max(arr[mask]))
+            return at(t)
+        return float(np.max(rms[mask]))
 
     def is_pluck(t: float) -> bool:
-        rms_ok = peak_near(rms, t) >= ratio * max(at(rms, t - half), 1e-6)
-        flux_ok = peak_near(onset_env, t) >= 1.20 * max(at(onset_env, t - half), 1e-6)
-        return rms_ok and flux_ok
+        return peak_near(t) >= ratio * max(at(t - half), 1e-6)
 
     ordered = sorted(notes, key=lambda n: n.start)
     merged: list[NoteEvent] = [ordered[0]]
@@ -476,14 +466,14 @@ def split_repeated_pitches(
 
     tick = seconds_per_tick(bpm, grid)
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
-    onsets = _nms_times(onsets, max(0.16, 0.80 * tick))
+    onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
     onsets = _confirmed_reattacks(y, sr, onsets, tick)
     split = _seed_holes_at_onsets(notes, onsets, tick)
     split = split_at_onsets(split, onsets, min_duration=min_duration)
     long: list[NoteEvent] = []
     short: list[NoteEvent] = []
     for note in split:
-        if note.duration >= 1.85 * tick:
+        if note.duration >= 1.45 * tick:
             long.append(note)
         else:
             short.append(note)
