@@ -251,7 +251,8 @@ def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) ->
             n_hi = n_at.get(pitch, 0)
             n_lo = n_at.get(low, 0)
             isolated = n_hi == 1 and n_lo >= 1
-            dominated = n_lo >= 2 * n_hi and n_lo >= 4
+            # 2× is too weak for C2/C3 riffs (often 4 low vs 2 high in 2 s).
+            dominated = n_lo >= 3 * n_hi and n_lo >= 6
             if not (isolated or dominated):
                 break
             pitch = low

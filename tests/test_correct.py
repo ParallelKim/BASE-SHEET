@@ -140,6 +140,22 @@ def test_snap_register_keeps_octave_jumps_when_both_are_common():
     assert [n.pitch for n in out] == [36, 36, 48, 48, 46, 43, 36, 48]
 
 
+def test_snap_register_keeps_c3_when_c2_is_only_slightly_more_common():
+    notes = [
+        NoteEvent(0.0, 0.2, 36),
+        NoteEvent(0.2, 0.4, 36),
+        NoteEvent(0.4, 0.6, 36),
+        NoteEvent(0.6, 0.8, 36),
+        NoteEvent(0.8, 1.0, 48),
+        NoteEvent(1.0, 1.2, 48),
+        NoteEvent(1.2, 1.4, 46),
+        NoteEvent(1.4, 1.6, 43),
+    ]
+    out = snap_register_to_neighbors(notes)
+    assert out[4].pitch == 48
+    assert out[5].pitch == 48
+
+
 def test_snap_register_keeps_flageolet_g4():
     notes = [
         NoteEvent(0.0, 0.2, 36),
