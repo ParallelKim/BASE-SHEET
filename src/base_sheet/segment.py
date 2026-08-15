@@ -14,6 +14,21 @@ from scipy.signal import find_peaks
 from base_sheet.models import MIN_NOTE_DURATION_S, NoteEvent, UNVOICED
 
 
+def is_slap_like(y: np.ndarray, sr: int | float) -> bool:
+    """Slap/pop DI has HF transients; fingerstyle sustain does not."""
+    import librosa
+
+    hop = 256
+    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=2048, hop_length=hop))
+    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=2048)
+    hi_mask = (freqs >= 2500.0) & (freqs <= 8000.0)
+    if not np.any(hi_mask):
+        return False
+    hi = spec[hi_mask].mean(axis=0)
+    hf = np.maximum(np.diff(hi, prepend=hi[:1]), 0.0)
+    return float(np.percentile(hf, 95)) >= 0.01
+
+
 def crepe_notes_boundary_signal(
     midi_pitches: np.ndarray,
     confidence: np.ndarray,
@@ -418,13 +433,7 @@ def detect_flux_peaks(
     band = (freqs >= 50.0) & (freqs <= 1800.0)
     env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
     times = librosa.frames_to_time(np.arange(len(env)), sr=sr, hop_length=hop)
-    hi = spec[(freqs >= 2500.0) & (freqs <= 8000.0)].mean(axis=0) if np.any(
-        (freqs >= 2500.0) & (freqs <= 8000.0)
-    ) else np.zeros(spec.shape[1])
-    hi = hi[: len(env)]
-    hi_flux = np.maximum(np.diff(hi, prepend=hi[:1]), 0.0)
-    # Fingerstyle sustain has ~0 HF flux; slap/pop does not. Skip on clean FS.
-    if hi_flux.size == 0 or float(np.percentile(hi_flux, 80)) < 0.02:
+    if not is_slap_like(y, sr):
         return np.zeros(0, dtype=float)
     distance = max(2, int(0.38 * tick * float(sr) / hop))
     prom = 0.38 * float(np.percentile(env, 90) + 1e-9)
@@ -445,8 +454,8 @@ def merge_unconfirmed_repeats(
 ) -> list[NoteEvent]:
     """Glue fragments cut on f0 wobble or envelope shimmer, not a pluck.
 
-    Split stays strict; merge is timid. Any RMS re-peak ≥ 1.12× keeps an
-    8th-note attack. Only dead shimmer and sub-100 ms ±1 jitter get glued.
+    Fingerstyle: keep a split only when low-band flux re-peaks (vibrato RMS
+    is not enough). Slap: RMS or flux is enough so 16ths stay split.
     """
     import librosa
 
@@ -454,22 +463,36 @@ def merge_unconfirmed_repeats(
         return list(notes)
     hop = 256
     rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=512)[0]
-    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=2048, hop_length=hop))
+    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=2048)
+    band = (freqs >= 50.0) & (freqs <= 1800.0)
+    onset_env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
+    n_frames = min(len(rms), len(onset_env))
+    rms = rms[:n_frames]
+    onset_env = onset_env[:n_frames]
+    times = librosa.frames_to_time(np.arange(n_frames), sr=sr, hop_length=hop)
     half = 0.45 * tick
     win = min(0.06, 0.25 * tick)
+    slap = is_slap_like(y, sr)
+    env_floor = 0.22 * float(np.percentile(onset_env, 90) + 1e-9)
 
-    def at(t: float) -> float:
-        idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
-        return float(rms[idx])
+    def at(arr: np.ndarray, t: float) -> float:
+        idx = int(np.clip(np.searchsorted(times, t), 0, len(arr) - 1))
+        return float(arr[idx])
 
-    def peak_near(t: float) -> float:
+    def peak_near(arr: np.ndarray, t: float) -> float:
         mask = (times >= t - win) & (times <= t + win)
         if not np.any(mask):
-            return at(t)
-        return float(np.max(rms[mask]))
+            return at(arr, t)
+        return float(np.max(arr[mask]))
 
     def is_pluck(t: float) -> bool:
-        return peak_near(t) >= ratio * max(at(t - half), 1e-6)
+        rms_ok = peak_near(rms, t) >= ratio * max(at(rms, t - half), 1e-6)
+        flux_peak = peak_near(onset_env, t)
+        flux_ok = flux_peak >= 1.22 * max(at(onset_env, t - half), 1e-6) and flux_peak >= env_floor
+        if slap:
+            return rms_ok or flux_ok
+        return rms_ok and flux_ok
 
     ordered = sorted(notes, key=lambda n: n.start)
     merged: list[NoteEvent] = [ordered[0]]

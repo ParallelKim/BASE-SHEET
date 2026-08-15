@@ -9,6 +9,7 @@ build/
 .mypy_cache/
 out/
 tests/fixtures/idmt-smt-bass/
+tests/fixtures/ijji_bass.m4a
 *.mid
 *.musicxml
 *.xml
