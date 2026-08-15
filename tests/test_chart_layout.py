@@ -62,7 +62,7 @@ def test_ijji_truth_is_exactly_the_chart():
 def test_ijji_verse_two_roots_per_bar():
     hits = ij_hits()
     verse = hits_in_bars(hits, *IJ_SECTIONS["verse"])
-    assert len(verse) == 24
+    assert len(verse) == 20  # 12 bars minus two fill bars
     assert [(h.eighth, h.pitch) for h in verse[:4]] == [
         (0.0, 30),
         (4.0, 38),
@@ -73,7 +73,7 @@ def test_ijji_verse_two_roots_per_bar():
 
 def test_ijji_chorus_one_chord_eighths():
     chorus = hits_in_bars(ij_hits(), *IJ_SECTIONS["chorus"])
-    assert len(chorus) == 64
+    assert len(chorus) == 48  # 8 bars minus two Bm fills
     assert chorus[0].pitch == 38 and chorus[8].pitch == 30
 
 
@@ -81,12 +81,16 @@ def test_ijji_sections_partition():
     hits = ij_hits()
     _assert_partition(IJ_SECTIONS, N_BARS, start=0)
     assert hits_in_bars(hits, *IJ_SECTIONS["tacet"]) == []
+    assert hits_in_bars(hits, *IJ_SECTIONS["coda_b"]) == []
     assert sum(len(hits_in_bars(hits, a, b)) for a, b in IJ_SECTIONS.values()) == len(hits)
 
 
-def test_ijji_approx_bars_are_named():
-    approx = [s.written for s in IJ_BARS if s.lock == "approx"]
-    assert approx == [16, 24, 28, 32, 36, 40, 44, 48, 52, 65, 66, 67, 68, 69, 70, 71, 72]
+def test_ijji_approx_bars_are_skipped_not_guessed():
+    approx = [s for s in IJ_BARS if s.lock == "approx"]
+    assert [s.written for s in approx] == [
+        16, 24, 28, 32, 36, 40, 44, 48, 52, 65, 66, 67, 68, 69, 70, 71, 72
+    ]
+    assert all(s.rhythm == "skip" and s.pitches == () for s in approx)
 
 
 def test_antifreeze_chart_is_80_written_bars():
@@ -118,7 +122,7 @@ def test_antifreeze_truth_is_exactly_the_chart():
 def test_antifreeze_sections_partition_played_bars():
     hits = af_hits()
     n = n_played_bars()
-    assert max(h.bar for h in hits) + 1 == n
+    assert n == 99
     _assert_partition(AF_SECTIONS, n, start=0)
     intro = hits_in_bars(hits, *AF_SECTIONS["intro"])
     verse = hits_in_bars(hits, *AF_SECTIONS["verse"])
@@ -127,10 +131,11 @@ def test_antifreeze_sections_partition_played_bars():
     chorus = hits_in_bars(hits, *AF_SECTIONS["chorus"])
     late = hits_in_bars(hits, *AF_SECTIONS["late"])
     assert all(h.dur_eighths == 1.0 for h in chorus)
-    assert all(h.dur_eighths == 8.0 for h in late)
+    assert late == []
+    assert max(h.bar for h in hits) < AF_SECTIONS["late"][0]
 
 
-def test_antifreeze_approx_bars_are_named():
-    approx = [s.written for s in AF_BARS if s.lock == "approx"]
-    assert approx[0] == 42
-    assert approx[1:] == list(range(60, 81))
+def test_antifreeze_approx_bars_are_skipped_not_guessed():
+    approx = [s for s in AF_BARS if s.lock == "approx"]
+    assert [s.written for s in approx] == [42] + list(range(60, 81))
+    assert all(s.rhythm == "skip" and s.pitches == () for s in approx)

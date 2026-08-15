@@ -27,6 +27,10 @@ def _whole(w: int, p: int, comment: str, lock: str = "score") -> BarSpec:
     return BarSpec(w, "whole", (p,), lock, comment)
 
 
+def _skip(w: int, comment: str) -> BarSpec:
+    return BarSpec(w, "skip", (), "approx", comment)
+
+
 def _bars() -> list[BarSpec]:
     rows: list[BarSpec] = []
 
@@ -36,55 +40,35 @@ def _bars() -> list[BarSpec]:
     for _ in range(6):
         rows.append(_pair(w, FS, D, "verse | F# D |"))
         w += 1
-        fill = w in (16, 24)
-        rows.append(
-            _pair(
-                w,
-                A,
-                E,
-                "verse | A E | last-beat fill on print" if fill else "verse | A E |",
-                lock="approx" if fill else "score",
-            )
-        )
+        if w in (16, 24):
+            rows.append(_skip(w, "verse | A + fill | — fill not scored"))
+        else:
+            rows.append(_pair(w, A, E, "verse | A E |"))
         w += 1
 
     for i, p in enumerate([D, FS, E, BM] * 2):
         wb = 25 + i
-        rows.append(
-            _eight(
-                wb,
-                p,
-                "chorus 8ths D|F#m|E|Bm",
-                lock="approx" if wb in (28, 32) else "score",
-            )
-        )
+        if wb in (28, 32):
+            rows.append(_skip(wb, "chorus Bm fill — not scored"))
+        else:
+            rows.append(_eight(wb, p, "chorus 8ths D|F#m|E|Bm"))
 
     w = 33
     for _ in range(6):
         rows.append(_pair(w, FS, D, "inst | F# D |"))
         w += 1
-        fill = w in (36, 40, 44)
-        rows.append(
-            _pair(
-                w,
-                A,
-                E,
-                "inst | A E |",
-                lock="approx" if fill else "score",
-            )
-        )
+        if w in (36, 40, 44):
+            rows.append(_skip(w, "inst | A + fill | — fill not scored"))
+        else:
+            rows.append(_pair(w, A, E, "inst | A E |"))
         w += 1
 
     for i, p in enumerate([FS, E, A, D, FS, E, BM, BM]):
         wb = 45 + i
-        rows.append(
-            _eight(
-                wb,
-                p,
-                "drive 8ths",
-                lock="approx" if wb in (48, 52) else "score",
-            )
-        )
+        if wb in (48, 52):
+            rows.append(_skip(wb, "drive fill — not scored"))
+        else:
+            rows.append(_eight(wb, p, "drive 8ths"))
 
     for i, p in enumerate([FS, GS, A, D] * 2):
         rows.append(_eight(53 + i, p, "drive E/G# 8ths"))
@@ -94,20 +78,8 @@ def _bars() -> list[BarSpec]:
     rows.append(_whole(63, FS, "coda F# tied"))
     rows.append(_pair(64, FS, A, "coda F# then A"))
 
-    for wb, a, b in (
-        (65, FS, None),
-        (66, E, E),
-        (67, FS, None),
-        (68, A, E),
-        (69, FS, None),
-        (70, A, A),
-        (71, FS, None),
-        (72, A, E),
-    ):
-        if b is None:
-            rows.append(_whole(wb, a, "coda sparse, unverified fret", lock="approx"))
-        else:
-            rows.append(_pair(wb, a, b, "coda sparse, unverified fret", lock="approx"))
+    for wb in range(65, 73):
+        rows.append(_skip(wb, "coda sparse TAB not locked — not scored"))
 
     return rows
 

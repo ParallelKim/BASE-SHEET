@@ -13,8 +13,8 @@ def _eight(w: int, p: int, comment: str, lock: str = "score") -> BarSpec:
     return BarSpec(w, "eight", (p,), lock, comment)
 
 
-def _down(w: int, p: int, comment: str) -> BarSpec:
-    return BarSpec(w, "downbeat", (p,), "approx", comment)
+def _skip(w: int, comment: str) -> BarSpec:
+    return BarSpec(w, "skip", (), "approx", comment)
 
 
 def _bars() -> list[BarSpec]:
@@ -33,18 +33,12 @@ def _bars() -> list[BarSpec]:
     add_eights(33, [B, AS, B, AS, B, AS, B], "p.3 vamp B / A#m7")
     rows.append(_eight(40, GS, "1st ending G#m7"))
     rows.append(_eight(41, FS, "1st ending F#"))
-    rows.append(_eight(42, FS, "1st ending F# into repeat", lock="approx"))
+    rows.append(_skip(42, "1st ending last bar not locked — not scored"))
     rows.append(_eight(43, GS, "2nd ending G#m7"))
     add_eights(44, [FS, FS, FS, FS], "p.4 F# pedal")
     add_eights(48, [DS, GS, CS, FS] * 3, "chorus loop | D#m | G# | C#7 | F# |")
-    for i, p in enumerate([DS, GS, CS, FS]):
-        rows.append(_down(60 + i, p, "p.5 fills, root only"))
-    for i, p in enumerate([DS, GS, CS, FS, DS]):
-        rows.append(_down(64 + i, p, "p.5 fills / 1st ending, root only"))
-    for i, p in enumerate([GS, CS, FS, DS]):
-        rows.append(_down(69 + i, p, "p.5 fills, root only"))
-    for i, p in enumerate([DS, GS, CS, FS] * 2):
-        rows.append(_down(73 + i, p, "outro wholes, root only"))
+    for w in range(60, 81):
+        rows.append(_skip(w, "p.5 fills/outro not locked — not scored"))
     return rows
 
 

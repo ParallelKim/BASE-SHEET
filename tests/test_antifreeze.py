@@ -11,7 +11,7 @@ from song_score import score_song
 
 FIXTURE = Path(__file__).parent / "fixtures" / "Antifreeze_bass_mixed.m4a"
 
-# (pitch_exact, pitch_chroma). late bars are lock=approx on the chart — not print-complete.
+# Pitch floors only on lock=score bars. late is skip/approx.
 SECTION_FLOORS = {
     "intro": (0.90, 0.95),
     "verse": (0.90, 0.95),
@@ -20,7 +20,6 @@ SECTION_FLOORS = {
     "vamp": (0.40, 0.65),
     "pedal": (0.40, 0.65),
     "chorus": (0.40, 0.65),
-    "late": (0.30, 0.55),
 }
 
 @pytest.fixture(scope="module")
@@ -76,9 +75,11 @@ def test_antifreeze_section_against_tab(antifreeze_run, section):
 def test_antifreeze_integration_all_sections(antifreeze_run):
     """통합: 분할 섹션이 한 타임라인으로 이어지고 전곡·청취 하한을 통과."""
     result, song = antifreeze_run
-    assert set(song.sections) == set(SECTIONS) == set(SECTION_FLOORS)
+    assert set(song.sections) == set(SECTIONS)
+    assert set(SECTION_FLOORS) | {"late"} == set(SECTIONS)
     n = n_played_bars()
-    assert max(h.bar for h in played_hits()) + 1 == n
+    assert n == 99
+    assert song.sections["late"].n_hits == 0
     assert song.overall.n_hits == sum(sc.n_hits for sc in song.sections.values())
     assert song.overall.pitch_chroma >= 0.70
     assert result.listen is not None
