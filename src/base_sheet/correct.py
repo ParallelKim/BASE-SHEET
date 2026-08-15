@@ -252,9 +252,6 @@ def correct_note_octaves(
 
     if not notes:
         return []
-    from base_sheet.segment import is_slap_like
-
-    slap_track = is_slap_like(y, sr)
     hop = 512
     n_fft = 8192
     stft = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop))
@@ -271,14 +268,6 @@ def correct_note_octaves(
         else:
             mag = np.median(stft[:, mask], axis=1)
         pitch = choose_octave_from_spectrum(mag, freqs, note.pitch)
-        if slap_track:
-            body0 = note.start + min(0.09, 0.40 * note.duration)
-            mask = (times >= body0) & (times < body1)
-            if np.any(mask):
-                mag = np.median(stft[:, mask], axis=1)
-            peaked = midi_from_spectrum_peak(mag, freqs, lo_hz=41.0, hi_hz=180.0)
-            if peaked is not None:
-                pitch = choose_octave_from_spectrum(mag, freqs, peaked)
         lifted = maybe_flageolet_pitch(mag, freqs, pitch)
         if lifted >= 55 and lifted != pitch:
             import librosa

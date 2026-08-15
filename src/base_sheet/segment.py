@@ -532,14 +532,6 @@ def split_repeated_pitches(
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
     onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
     onsets = _confirmed_reattacks(y, sr, onsets, tick)
-    flux_peaks = detect_flux_peaks(y, sr, tick)
-    if flux_peaks.size:
-        extra = []
-        for t in flux_peaks:
-            if onsets.size == 0 or np.min(np.abs(onsets - t)) > 0.08:
-                extra.append(float(t))
-        if extra:
-            onsets = np.sort(np.concatenate([onsets, np.asarray(extra, dtype=float)]))
     split = _seed_holes_at_onsets(notes, onsets, tick, y=y, sr=sr)
     split = split_at_onsets(split, onsets, min_duration=min_duration)
     long: list[NoteEvent] = []
