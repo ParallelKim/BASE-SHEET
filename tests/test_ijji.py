@@ -1,4 +1,4 @@
-"""잊지: one transcription, then per-section tests plus integration."""
+"""자우림 「있지」: one transcription, then per-section tests plus integration."""
 
 import pytest
 

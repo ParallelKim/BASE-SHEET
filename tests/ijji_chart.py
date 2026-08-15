@@ -1,4 +1,6 @@
-"""잊지 bass chart: one row per written bar (akbobada, 4 pages, 72 bars, no repeats).
+"""자우림 「있지」 bass chart (akbobada, 4 pages, 72 bars, no repeats).
+
+The identifier ``ijji`` is the romanization of 있지 — not 잊지.
 
 MIDI: F#1=30 D2=38 A1=33 E1=28 B1=35 G#1=32.
 lock=score was read from TAB + chord symbols. lock=approx is not print-complete.

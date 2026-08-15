@@ -1,4 +1,4 @@
-"""잊지: expand ``ijji_chart`` (do not add pitches here)."""
+"""있지: expand ``ijji_chart`` (do not add pitches here)."""
 
 from chart_table import played_from_specs, require_contiguous
 from ijji_chart import BARS, PLAY, SECTIONS  # noqa: F401

@@ -1,4 +1,4 @@
-"""Score BASE-SHEET against the published 「잊지」 bass tab."""
+"""Score BASE-SHEET against the published 「있지」 bass tab."""
 
 from __future__ import annotations
 
