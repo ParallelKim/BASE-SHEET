@@ -32,7 +32,5 @@ def score_song(
     overall = score_hits(notes, hits, bpm, t0)
     part: dict[str, SheetScore] = {}
     for name, (a, b) in sections.items():
-        subset = hits_in_bars(hits, a, b)
-        if subset:
-            part[name] = score_hits(notes, subset, bpm, t0)
+        part[name] = score_hits(notes, hits_in_bars(hits, a, b), bpm, t0)
     return SongScore(t0=t0, overall=overall, sections=part)

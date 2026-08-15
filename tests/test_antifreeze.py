@@ -1,49 +1,36 @@
+"""Antifreeze: one transcription, then per-section tests plus integration."""
+
 from pathlib import Path
 
 import pytest
 
 from base_sheet.pipeline import run
 from antifreeze_eval import score_intro_midi
-from antifreeze_truth import SCORE_BPM, SCORE_KEY, SECTIONS, played_hits
+from antifreeze_truth import SCORE_BPM, SCORE_KEY, SECTIONS, n_played_bars, played_hits
 from song_score import score_song
 
 FIXTURE = Path(__file__).parent / "fixtures" / "Antifreeze_bass_mixed.m4a"
 
+# (pitch_exact, pitch_chroma) — intro/verse are the known-strong 8th loop.
+SECTION_FLOORS = {
+    "intro": (0.90, 0.95),
+    "verse": (0.90, 0.95),
+    "middle_a": (0.45, 0.70),
+    "middle_b": (0.45, 0.70),
+    "vamp": (0.40, 0.65),
+    "pedal": (0.40, 0.65),
+    "chorus": (0.40, 0.65),
+    "late": (0.30, 0.55),
+}
 
-@pytest.mark.slow
-def test_antifreeze_intro_matches_tab_eighths(tmp_path: Path):
-    """Compare against the published bass tab: 8 eighths/bar, q=128, F#."""
+@pytest.fixture(scope="module")
+def antifreeze_run(tmp_path_factory):
     if not FIXTURE.is_file():
         pytest.skip("fixture missing")
+    out = tmp_path_factory.mktemp("antifreeze")
     result = run(
         FIXTURE,
-        tmp_path,
-        engine="crepe",
-        bpm=SCORE_BPM,
-        grid="8",
-        key=SCORE_KEY,
-    )
-    xml = result.musicxml_path.read_text(encoding="utf-8")
-    assert "<sign>F</sign>" in xml
-    assert "<fifths>6</fifths>" in xml
-
-    metrics = score_intro_midi(result.midi_path)
-    assert metrics.pitch_acc >= 0.9
-    assert metrics.mean_onsets_per_bar >= 5.5
-    assert result.listen is not None
-    assert result.listen.pitch_within_semitone >= 0.7
-    assert result.midi_path.name.endswith(".mid")
-    assert "quant" in result.quantized_midi_path.name
-
-
-@pytest.mark.slow
-def test_antifreeze_full_chart_matches_published_tab(tmp_path: Path):
-    """전곡 탭: 인트로 8분 루트 + 전개/코러스 루트, 아웃트로 온음표."""
-    if not FIXTURE.is_file():
-        pytest.skip("fixture missing")
-    result = run(
-        FIXTURE,
-        tmp_path,
+        out,
         engine="crepe",
         bpm=SCORE_BPM,
         grid="8",
@@ -51,8 +38,50 @@ def test_antifreeze_full_chart_matches_published_tab(tmp_path: Path):
         write_preview=False,
     )
     song = score_song(result.performed, played_hits(), SCORE_BPM, SECTIONS)
-    assert song.sections["intro"].pitch_exact >= 0.90
-    assert song.sections["intro"].pitch_chroma >= 0.95
+    return result, song
+
+
+@pytest.mark.slow
+def test_antifreeze_intro_eighth_density_and_clef(antifreeze_run):
+    """분할: 인트로 8분음표 밀도 + 베이스 clef/조표."""
+    result, _song = antifreeze_run
+    xml = result.musicxml_path.read_text(encoding="utf-8")
+    assert "<sign>F</sign>" in xml
+    assert "<fifths>6</fifths>" in xml
+    metrics = score_intro_midi(result.midi_path)
+    assert metrics.pitch_acc >= 0.9
+    assert metrics.mean_onsets_per_bar >= 5.5
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("section", list(SECTION_FLOORS))
+def test_antifreeze_section_against_tab(antifreeze_run, section):
+    """분할: 섹션별로 탭 피치를 채점해 약한 구간을 드러낸다."""
+    _result, song = antifreeze_run
+    assert section in song.sections, f"missing section {section}"
+    sc = song.sections[section]
+    exact_floor, chroma_floor = SECTION_FLOORS[section]
+    assert sc.n_hits > 0, section
+    assert sc.pitch_exact >= exact_floor, (
+        f"{section} exact={sc.pitch_exact:.3f} chroma={sc.pitch_chroma:.3f} "
+        f"missing={sc.missing}/{sc.n_hits}"
+    )
+    assert sc.pitch_chroma >= chroma_floor, (
+        f"{section} exact={sc.pitch_exact:.3f} chroma={sc.pitch_chroma:.3f} "
+        f"missing={sc.missing}/{sc.n_hits}"
+    )
+
+
+@pytest.mark.slow
+def test_antifreeze_integration_all_sections(antifreeze_run):
+    """통합: 분할 섹션이 한 타임라인으로 이어지고 전곡·청취 하한을 통과."""
+    result, song = antifreeze_run
+    assert set(song.sections) == set(SECTIONS) == set(SECTION_FLOORS)
+    n = n_played_bars()
+    assert max(h.bar for h in played_hits()) + 1 == n
+    assert song.overall.n_hits == sum(sc.n_hits for sc in song.sections.values())
     assert song.overall.pitch_chroma >= 0.70
     assert result.listen is not None
     assert result.listen.pitch_within_semitone >= 0.70
+    assert song.sections["intro"].pitch_exact >= 0.90
+    assert song.sections["verse"].pitch_exact >= 0.90

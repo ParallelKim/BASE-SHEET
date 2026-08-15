@@ -142,8 +142,14 @@ def choose_t0(
     first = notes[0].start if notes else 0.0
     cands = [0.0, first] + [i * eighth for i in range(window_eighths)]
     best_t, best = 0.0, -1.0
-    # Align using the first 32 sounding hits so verse/intro sets the grid.
-    probe = hits[:32] if len(hits) > 32 else hits
+    # Align on the first 8 sounding bars (not a fixed hit count: 8ths vs halves).
+    if hits:
+        min_bar = min(h.bar for h in hits)
+        probe = [h for h in hits if h.bar < min_bar + 8]
+        if not probe:
+            probe = hits[:32]
+    else:
+        probe = hits
     for cand in cands:
         sc = score_hits(notes, probe, bpm, cand)
         key = sc.pitch_exact * 2.0 + sc.pitch_chroma
