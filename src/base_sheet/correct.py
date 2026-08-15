@@ -191,6 +191,47 @@ def choose_octave_from_spectrum(
     return max(scored)[2]
 
 
+def midi_from_spectrum_peak(
+    mag: np.ndarray,
+    freqs: np.ndarray,
+    *,
+    lo_hz: float = 80.0,
+    hi_hz: float = 430.0,
+) -> int | None:
+    """MIDI of the strongest spectral peak in the bass/flageolet band."""
+    import librosa
+
+    mask = (freqs >= lo_hz) & (freqs <= hi_hz)
+    if not np.any(mask):
+        return None
+    idx = int(np.argmax(mag[mask]))
+    hz = float(np.asarray(freqs[mask])[idx])
+    if hz <= 0:
+        return None
+    midi = int(round(float(librosa.hz_to_midi(hz))))
+    return fold_to_bass_range(midi)
+
+
+def maybe_flageolet_pitch(mag: np.ndarray, freqs: np.ndarray, midi_pitch: int) -> int:
+    """If the sounding tone is a high natural harmonic, keep that pitch.
+
+    CREPE often unvoices flageolet notes or reports a low string residual.
+    A real open-string note still has energy an octave below the peak.
+    """
+    import librosa
+
+    peak_midi = midi_from_spectrum_peak(mag, freqs)
+    if peak_midi is None or peak_midi < 50:
+        return int(midi_pitch)
+    f_pk = float(librosa.midi_to_hz(peak_midi))
+    e_pk = _band_energy(mag, freqs, f_pk)
+    e_half = _band_energy(mag, freqs, 0.5 * f_pk)
+    e_third = _band_energy(mag, freqs, f_pk / 3.0)
+    if e_pk >= 1e-8 and e_half < 0.28 * e_pk and e_third < 0.32 * e_pk:
+        return peak_midi
+    return int(midi_pitch)
+
+
 def correct_note_octaves(
     y: np.ndarray,
     sr: int | float,
@@ -217,6 +258,7 @@ def correct_note_octaves(
         else:
             mag = np.median(stft[:, mask], axis=1)
         pitch = choose_octave_from_spectrum(mag, freqs, note.pitch)
+        pitch = maybe_flageolet_pitch(mag, freqs, pitch)
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )

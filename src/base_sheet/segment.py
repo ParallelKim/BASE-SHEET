@@ -273,8 +273,12 @@ def split_repeats_on_meter(
         while t <= note.end - min_dur + 1e-9:
             peak, peak_t = _max_near(rms, t)
             flux, flux_t = _max_near(onset_env, t)
-            trough = _at(rms, t - half)
-            reattack = peak >= 1.25 * max(trough, 1e-6) and peak >= 0.13 * attack
+            flux_trough = _at(onset_env, t - half)
+            attack_flux = max(_max_near(onset_env, note.start)[0], 1e-6)
+            reattack = (
+                flux >= 1.40 * max(flux_trough, 1e-6)
+                and flux >= 0.22 * attack_flux
+            )
             if reattack:
                 cut = flux_t if flux >= env_floor else peak_t
                 if note.start + min_dur <= cut <= note.end - min_dur:
@@ -325,6 +329,8 @@ def _seed_holes_at_onsets(
     notes: list[NoteEvent],
     onsets: np.ndarray,
     tick: float,
+    y: np.ndarray | None = None,
+    sr: int | float | None = None,
 ) -> list[NoteEvent]:
     """If f0 dropped out between plucks, still put a note on the attack."""
     if not notes:
@@ -332,6 +338,22 @@ def _seed_holes_at_onsets(
     ordered = sorted(notes, key=lambda n: n.start)
     extra: list[NoteEvent] = []
     min_hole = 0.45 * tick
+    mag_at = None
+    freqs = None
+    times = None
+    stft = None
+    if y is not None and sr is not None:
+        import librosa
+
+        hop = 512
+        stft = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=4096, hop_length=hop))
+        freqs = librosa.fft_frequencies(sr=float(sr), n_fft=4096)
+        times = librosa.frames_to_time(np.arange(stft.shape[1]), sr=sr, hop_length=hop)
+
+        def mag_at(t: float) -> np.ndarray:
+            idx = int(np.clip(np.searchsorted(times, t), 0, stft.shape[1] - 1))
+            return stft[:, idx]
+
     for onset in np.atleast_1d(onsets).astype(float):
         covered = any(n.start - 0.02 <= onset < n.end for n in ordered)
         if covered:
@@ -346,11 +368,19 @@ def _seed_holes_at_onsets(
             ordered,
             key=lambda n: min(abs(n.start - onset), abs(n.end - onset)),
         )
+        pitch = nearest.pitch
+        if mag_at is not None and freqs is not None:
+            from base_sheet.correct import maybe_flageolet_pitch, midi_from_spectrum_peak
+
+            mag = mag_at(onset)
+            peaked = midi_from_spectrum_peak(mag, freqs)
+            if peaked is not None:
+                pitch = maybe_flageolet_pitch(mag, freqs, peaked)
         extra.append(
             NoteEvent(
                 start=float(onset),
                 end=min(float(onset) + 0.85 * tick, gap_end),
-                pitch=nearest.pitch,
+                pitch=pitch,
                 amplitude=nearest.amplitude,
             )
         )
@@ -363,32 +393,40 @@ def _confirmed_reattacks(
     onsets: np.ndarray,
     tick: float,
 ) -> np.ndarray:
-    """Keep onsets that actually re-peak in RMS (plucks), drop sustain wobble."""
+    """Keep onsets with a real low-band flux jump; drop RMS vibrato shimmer.
+
+    Slap/pop attacks often do not dip in RMS between hits, so RMS ratio
+    misses them. Fingerstyle sustain wobbles RMS without flux.
+    """
     import librosa
 
     if onsets.size == 0:
         return onsets
     hop = 256
-    rms = librosa.feature.rms(y=y, hop_length=hop, frame_length=512)[0]
-    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    spec = np.abs(librosa.stft(np.asarray(y, dtype=float), n_fft=2048, hop_length=hop))
+    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=2048)
+    band = (freqs >= 50.0) & (freqs <= 1800.0)
+    onset_env = librosa.onset.onset_strength(S=spec[band, :], sr=float(sr), hop_length=hop)
+    times = librosa.frames_to_time(np.arange(len(onset_env)), sr=sr, hop_length=hop)
     half = 0.45 * tick
     win = min(0.06, 0.25 * tick)
+    floor = 0.10 * float(np.percentile(onset_env, 90) + 1e-9)
 
     def at(t: float) -> float:
-        idx = int(np.clip(np.searchsorted(times, t), 0, len(rms) - 1))
-        return float(rms[idx])
+        idx = int(np.clip(np.searchsorted(times, t), 0, len(onset_env) - 1))
+        return float(onset_env[idx])
 
     def peak_near(t: float) -> float:
         mask = (times >= t - win) & (times <= t + win)
         if not np.any(mask):
             return at(t)
-        return float(np.max(rms[mask]))
+        return float(np.max(onset_env[mask]))
 
     kept: list[float] = []
     for onset in np.atleast_1d(onsets).astype(float):
         peak = peak_near(onset)
         trough = at(onset - half)
-        if peak >= 1.28 * max(trough, 1e-6):
+        if peak >= 1.35 * max(trough, 1e-6) and peak >= floor:
             kept.append(float(onset))
     return np.asarray(kept, dtype=float)
 
@@ -468,7 +506,7 @@ def split_repeated_pitches(
     onsets = detect_bass_onsets(y, sr, bpm=bpm)
     onsets = _nms_times(onsets, max(0.14, 0.72 * tick))
     onsets = _confirmed_reattacks(y, sr, onsets, tick)
-    split = _seed_holes_at_onsets(notes, onsets, tick)
+    split = _seed_holes_at_onsets(notes, onsets, tick, y=y, sr=sr)
     split = split_at_onsets(split, onsets, min_duration=min_duration)
     long: list[NoteEvent] = []
     short: list[NoteEvent] = []
