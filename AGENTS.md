@@ -18,6 +18,7 @@
 - Antifreeze: `--bpm 128 --grid 8 --key F#`. PLAY는 126 연주 마디 (`tests/antifreeze_chart.py`).
 - 두 픽스처 스템은 믹스 잔여(킥·다른 저음)가 있다. 소스 분리·킥 게이트를 넣지 않는다.
 - 마디 오차: `python scripts/report_bar_scores.py`.
+- 웹 스튜디오: `python scripts/serve_midi_viewer.py` (크롭 대조 + 음원 업로드).
 
 ## 저장소
 

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-웹 스튜디오: 픽스처 MIDI·출판 크롭 대조, 새 스템 업로드 후 전사.
+웹 스튜디오: 픽스처 MIDI·출판 크롭 대조, 새 스템 업로드 후 전사 (`python scripts/serve_midi_viewer.py`).
 
 ## 0.2.0 — 차트·PLAY·믹스 스템 채점
 

@@ -1,0 +1,311 @@
+"""Local web studio: fixture MIDI + score crops, and upload-to-transcribe jobs."""
+
+from __future__ import annotations
+
+import json
+import sys
+import threading
+import time
+import uuid
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+if str(ROOT / "tests") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tests"))
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
+OUT = ROOT / "out"
+LISTEN = OUT / "listen"
+JOBS = OUT / "jobs"
+CROPS = ROOT / "tests" / "fixtures" / "score_crops"
+MAX_UPLOAD_BYTES = 30 * 1024 * 1024
+AUDIO_SUFFIXES = {".wav", ".mp3", ".m4a", ".aiff", ".aif", ".flac", ".ogg"}
+
+_queue: list[str] = []
+_q_lock = threading.Lock()
+_worker_started = False
+
+
+@dataclass
+class Job:
+    id: str
+    status: str
+    name: str
+    bpm: float | None
+    grid: str
+    key: str | None
+    error: str | None = None
+    created: float = 0.0
+    started: float | None = None
+    finished: float | None = None
+
+    def dir(self) -> Path:
+        return JOBS / self.id
+
+    def save(self) -> None:
+        d = self.dir()
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "job.json").write_text(json.dumps(asdict(self), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def get_job(job_id: str) -> Job | None:
+    return _load_job(job_id)
+
+
+def _load_job(job_id: str) -> Job | None:
+    path = JOBS / job_id / "job.json"
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return Job(**data)
+
+
+def _play_ijji() -> list[int]:
+    from ijji_chart import PLAY
+
+    return list(PLAY)
+
+
+def _play_af() -> list[int]:
+    from antifreeze_chart import PLAY
+
+    return list(PLAY)
+
+
+def _first_midi(patterns: list[str]) -> Path | None:
+    roots = [LISTEN, OUT]
+    for folder in roots:
+        if not folder.is_dir():
+            continue
+        for pat in patterns:
+            hits = sorted(p for p in folder.glob(pat) if p.is_file() and ".quant." not in p.name)
+            if hits:
+                return hits[0]
+    return None
+
+
+def _quant_for(midi: Path | None) -> Path | None:
+    if midi is None:
+        return None
+    q = midi.with_name(midi.stem + ".quant.mid")
+    return q if q.is_file() else None
+
+
+def _rel(path: Path | None) -> str | None:
+    if path is None:
+        return None
+    return "/" + path.resolve().relative_to(ROOT).as_posix()
+
+
+def _audio_ijji() -> Path | None:
+    from ijji_eval import fixture_path
+
+    return fixture_path()
+
+
+def fixture_songs() -> list[dict]:
+    ijji_midi = _first_midi(["*있지*.mid", "*ijji*.mid"])
+    af_midi = _first_midi(["*Antifreeze*.mid", "*antifreeze*.mid"])
+    return [
+        {
+            "id": "ijji",
+            "title": "있지 (자우림)",
+            "kind": "fixture",
+            "bpm": 84.0,
+            "key": "F# minor",
+            "grid": "8",
+            "t0": 1.0714,
+            "n_written": 72,
+            "play": _play_ijji(),
+            "sections": {
+                "tacet": [0, 12],
+                "verse": [12, 24],
+                "chorus": [24, 32],
+                "inst": [32, 44],
+                "drive": [44, 60],
+                "coda_a": [60, 64],
+                "coda_b": [64, 72],
+            },
+            "midi": _rel(ijji_midi),
+            "quant": _rel(_quant_for(ijji_midi)),
+            "audio": _rel(_audio_ijji()) if _audio_ijji() else None,
+            "crop_song": "ijji",
+            "n_crops": 72,
+        },
+        {
+            "id": "antifreeze",
+            "title": "Antifreeze",
+            "kind": "fixture",
+            "bpm": 128.0,
+            "key": "F#",
+            "grid": "8",
+            "t0": 0.7031,
+            "n_written": 80,
+            "play": _play_af(),
+            "sections": {
+                "intro": [0, 8],
+                "verse": [8, 16],
+                "middle_a": [16, 40],
+                "middle_b": [40, 48],
+                "vamp": [48, 74],
+                "pedal": [74, 78],
+                "chorus": [78, 102],
+                "late": [102, 200],
+            },
+            "midi": _rel(af_midi),
+            "quant": _rel(_quant_for(af_midi)),
+            "audio": _rel(ROOT / "tests" / "fixtures" / "Antifreeze_bass_mixed.m4a"),
+            "crop_song": "antifreeze",
+            "n_crops": 80,
+        },
+    ]
+
+
+def job_song(job: Job) -> dict:
+    d = job.dir()
+    midis = sorted(d.glob("*.mid"))
+    performed = next((p for p in midis if ".quant." not in p.name), None)
+    return {
+        "id": f"job-{job.id}",
+        "title": job.name,
+        "kind": "job",
+        "status": job.status,
+        "error": job.error,
+        "bpm": job.bpm,
+        "key": job.key,
+        "grid": job.grid,
+        "t0": 0.0,
+        "n_written": 0,
+        "play": [],
+        "sections": {},
+        "midi": _rel(performed) if job.status == "done" else None,
+        "quant": _rel(_quant_for(performed)) if job.status == "done" else None,
+        "audio": None,
+        "crop_song": None,
+        "n_crops": 0,
+        "job_id": job.id,
+    }
+
+
+def list_jobs() -> list[Job]:
+    if not JOBS.is_dir():
+        return []
+    out = []
+    for path in sorted(JOBS.glob("*/job.json")):
+        job = _load_job(path.parent.name)
+        if job:
+            out.append(job)
+    return out
+
+
+def catalog() -> dict:
+    songs = fixture_songs()
+    songs.extend(job_song(j) for j in list_jobs())
+    return {"songs": songs}
+
+
+def crop_urls(song: str) -> list[dict]:
+    if song not in {"ijji", "antifreeze"}:
+        return []
+    folder = CROPS / song
+    items = []
+    for p in sorted(folder.glob("m*.png")):
+        try:
+            bar = int(p.stem[1:])
+        except ValueError:
+            continue
+        items.append({"bar": bar, "url": _rel(p)})
+    return items
+
+
+def written_bar(play: list[int], t: float, bpm: float, t0: float = 0.0) -> int | None:
+    if bpm <= 0 or not play:
+        return None
+    bar_s = 240.0 / float(bpm)
+    idx = int((max(0.0, t - t0)) / bar_s)
+    if idx < 0 or idx >= len(play):
+        return play[-1] if idx >= len(play) else play[0]
+    return play[idx]
+
+
+def create_job(
+    filename: str,
+    data: bytes,
+    *,
+    bpm: float | None,
+    grid: str,
+    key: str | None,
+) -> Job:
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise ValueError("파일이 30MB를 넘습니다")
+    suffix = Path(filename).suffix.lower()
+    if suffix not in AUDIO_SUFFIXES:
+        raise ValueError("wav / mp3 / m4a / flac / ogg / aiff 만 받습니다")
+    if grid not in {"8", "16", "8t", "16t"}:
+        raise ValueError("grid 는 8, 16, 8t, 16t")
+    job = Job(
+        id=uuid.uuid4().hex[:12],
+        status="queued",
+        name=Path(filename).name,
+        bpm=bpm,
+        grid=grid,
+        key=key or None,
+        created=time.time(),
+    )
+    job.dir().mkdir(parents=True, exist_ok=True)
+    audio = job.dir() / f"input{suffix}"
+    audio.write_bytes(data)
+    job.save()
+    with _q_lock:
+        _queue.append(job.id)
+    _ensure_worker()
+    return job
+
+
+def _ensure_worker() -> None:
+    global _worker_started
+    with _q_lock:
+        if _worker_started:
+            return
+        _worker_started = True
+    threading.Thread(target=_worker, name="studio-transcribe", daemon=True).start()
+
+
+def _worker() -> None:
+    while True:
+        with _q_lock:
+            job_id = _queue.pop(0) if _queue else None
+        if job_id is None:
+            time.sleep(0.4)
+            continue
+        job = _load_job(job_id)
+        if job is None:
+            continue
+        job.status = "running"
+        job.started = time.time()
+        job.save()
+        try:
+            from base_sheet.pipeline import run
+
+            audio = next(job.dir().glob("input.*"))
+            run(
+                audio,
+                job.dir(),
+                engine="crepe",
+                bpm=job.bpm,
+                grid=job.grid,
+                key=job.key,
+                write_preview=True,
+            )
+            job.status = "done"
+        except Exception as exc:  # noqa: BLE001
+            job.status = "error"
+            job.error = str(exc)
+        job.finished = time.time()
+        job.save()
+
+
+def job_public(job: Job) -> dict:
+    return {**asdict(job), **job_song(job)}

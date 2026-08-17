@@ -2,332 +2,75 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BASE-SHEET MIDI</title>
-  <style>
-    :root {
-      --bg: #12141a;
-      --panel: #1b1e27;
-      --line: #2c3140;
-      --text: #e8e6e1;
-      --muted: #8b909c;
-      --note: #e2a15a;
-      --note2: #6aa6c9;
-      --play: #f3d39a;
-      --key: #3d4454;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 ui-sans-serif, system-ui, sans-serif; }
-    header {
-      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-      padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
-    }
-    h1 { font-size: 16px; font-weight: 650; margin: 0 12px 0 0; letter-spacing: 0.02em; }
-    button, select, .file {
-      background: #252a36; color: var(--text); border: 1px solid var(--line);
-      border-radius: 6px; padding: 7px 12px; cursor: pointer; font: inherit;
-    }
-    button:hover, .file:hover { border-color: #4a5164; }
-    button:disabled { opacity: 0.45; cursor: default; }
-    .file input { display: none; }
-    #roll-wrap { position: relative; height: calc(100% - 118px); overflow: auto; background: #0e1015; }
-    canvas { display: block; }
-    footer {
-      display: flex; gap: 18px; align-items: center; padding: 8px 18px;
-      border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; background: var(--panel);
-    }
-    .drop { outline: 2px dashed #3a4154; outline-offset: -10px; }
-    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
-    .a { background: var(--note); } .b { background: var(--note2); }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BASE-SHEET 스튜디오</title>
+  <link rel="stylesheet" href="/web/studio.css" />
 </head>
 <body>
   <header>
-    <h1>BASE-SHEET MIDI</h1>
-    <label class="file">파일 열기<input id="files" type="file" accept=".mid,.midi,audio/midi" multiple /></label>
-    <select id="remote" hidden><option value="">출력 폴더…</option></select>
-    <button id="play" disabled>재생</button>
-    <button id="stop" disabled>정지</button>
-    <span id="meta" style="color:var(--muted)"></span>
+    <h1>BASE-SHEET 스튜디오</h1>
+    <div class="tabs">
+      <button type="button" data-tab="view" class="active" id="tab-view">보기</button>
+      <button type="button" data-tab="upload" id="tab-upload">올리기</button>
+    </div>
   </header>
-  <div id="roll-wrap"><canvas id="roll"></canvas></div>
-  <footer>
-    <span><i class="swatch a"></i>트랙 A</span>
-    <span><i class="swatch b"></i>트랙 B (두 번째 파일)</span>
-    <span>.mid / .quant.mid 를 열어 피아노롤로 보고 재생합니다. 베이스 음역이 위에 옵니다.</span>
-  </footer>
-  <script>
-const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-const midiHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
-const midiName = (m) => NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1);
-
-function readVar(dv, i) {
-  let v = 0, b;
-  do { b = dv.getUint8(i++); v = (v << 7) | (b & 0x7f); } while (b & 0x80);
-  return [v, i];
-}
-
-function parseMidi(buf) {
-  const dv = new DataView(buf);
-  const str = (o, n) => String.fromCharCode(...new Uint8Array(buf, o, n));
-  if (str(0, 4) !== "MThd") throw new Error("MIDI 헤더가 아닙니다");
-  const format = dv.getUint16(8);
-  const ntrks = dv.getUint16(10);
-  const division = dv.getUint16(12);
-  if (division & 0x8000) throw new Error("SMPTE MIDI는 지원하지 않습니다");
-  let off = 14;
-  const tracks = [];
-  for (let t = 0; t < ntrks; t++) {
-    if (str(off, 4) !== "MTrk") throw new Error("트랙 헤더가 깨졌습니다");
-    const len = dv.getUint32(off + 4);
-    tracks.push(new Uint8Array(buf, off + 8, len));
-    off += 8 + len;
-  }
-  const events = [];
-  let tempo = 500000;
-  const tempos = [{ tick: 0, us: 500000 }];
-  for (const bytes of tracks) {
-    const td = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    let i = 0, tick = 0, run = 0;
-    while (i < bytes.length) {
-      let dt; [dt, i] = readVar(td, i);
-      tick += dt;
-      let st = td.getUint8(i);
-      if (st < 0x80) { st = run; } else { i++; run = st; }
-      if (st === 0xff) {
-        const type = td.getUint8(i++);
-        let ln; [ln, i] = readVar(td, i);
-        if (type === 0x51 && ln === 3) {
-          tempo = (td.getUint8(i) << 16) | (td.getUint8(i + 1) << 8) | td.getUint8(i + 2);
-          tempos.push({ tick, us: tempo });
-        }
-        i += ln;
-      } else if (st === 0xf0 || st === 0xf7) {
-        let ln; [ln, i] = readVar(td, i); i += ln;
-      } else {
-        const cmd = st >> 4;
-        const a = td.getUint8(i++);
-        const b = (cmd === 0xc || cmd === 0xd) ? 0 : td.getUint8(i++);
-        if (cmd === 0x9 || cmd === 0x8) events.push({ tick, on: cmd === 0x9 && b > 0, pitch: a, vel: b });
-      }
-    }
-  }
-  tempos.sort((x, y) => x.tick - y.tick);
-  const tickSec = (tick) => {
-    let t = 0, last = 0, us = tempos[0].us;
-    for (const tp of tempos) {
-      if (tp.tick >= tick) break;
-      t += ((tp.tick - last) * us) / division / 1e6;
-      last = tp.tick; us = tp.us;
-    }
-    t += ((tick - last) * us) / division / 1e6;
-    return t;
-  };
-  const ons = new Map();
-  const notes = [];
-  for (const ev of events.sort((a, b) => a.tick - b.tick || a.on - b.on)) {
-    const k = ev.pitch;
-    if (ev.on) ons.set(k, ev);
-    else if (ons.has(k)) {
-      const s = ons.get(k); ons.delete(k);
-      notes.push({ pitch: k, start: tickSec(s.tick), end: Math.max(tickSec(ev.tick), tickSec(s.tick) + 0.03), vel: s.vel });
-    }
-  }
-  for (const s of ons.values()) {
-    notes.push({ pitch: s.pitch, start: tickSec(s.tick), end: tickSec(s.tick) + 0.2, vel: s.vel });
-  }
-  const bpm = 60e6 / tempos[tempos.length - 1].us;
-  const dur = notes.reduce((m, n) => Math.max(m, n.end), 0);
-  return { format, ntrks, division, bpm, duration: dur, notes };
-}
-
-const state = { tracks: [], playing: false, t0: 0, ctx: null, playhead: 0, timer: 0, voices: [] };
-
-function loadArray(buf, name, slot) {
-  const parsed = parseMidi(buf);
-  parsed.name = name;
-  state.tracks[slot] = parsed;
-  if (slot === 0) state.tracks.length = 1;
-  draw();
-  document.getElementById("play").disabled = false;
-  document.getElementById("stop").disabled = false;
-  const bits = state.tracks.filter(Boolean).map((t) => `${t.name} · ${t.notes.length}음 · ${t.bpm.toFixed(1)} BPM · ${t.duration.toFixed(1)}s`);
-  document.getElementById("meta").textContent = bits.join("  |  ");
-}
-
-async function loadFile(file, slot) {
-  loadArray(await file.arrayBuffer(), file.name, slot);
-}
-
-function allNotes() {
-  const out = [];
-  state.tracks.forEach((t, i) => t && t.notes.forEach((n) => out.push({ ...n, track: i })));
-  return out;
-}
-
-function draw(playhead) {
-  const notes = allNotes();
-  const canvas = document.getElementById("roll");
-  const wrap = document.getElementById("roll-wrap");
-  const dur = Math.max(1, ...state.tracks.filter(Boolean).map((t) => t.duration), playhead || 0);
-  let lo = 28, hi = 52;
-  for (const n of notes) { lo = Math.min(lo, n.pitch); hi = Math.max(hi, n.pitch); }
-  lo = Math.max(21, lo - 1); hi = Math.min(72, hi + 1);
-  const rowH = 18, left = 48, px = Math.max(80, (wrap.clientWidth - left) / Math.max(dur, 4) * 4);
-  const W = Math.max(wrap.clientWidth, left + dur * px + 24);
-  const H = Math.max(wrap.clientHeight, (hi - lo + 1) * rowH + 8);
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  canvas.style.width = W + "px"; canvas.style.height = H + "px";
-  const g = canvas.getContext("2d");
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.fillStyle = "#0e1015"; g.fillRect(0, 0, W, H);
-  for (let p = lo; p <= hi; p++) {
-    const y = (hi - p) * rowH;
-    const black = [1, 3, 6, 8, 10].includes(p % 12);
-    g.fillStyle = black ? "#141821" : "#12151c";
-    g.fillRect(left, y, W - left, rowH);
-    g.fillStyle = "#2a2f3c"; g.fillRect(0, y, left, rowH);
-    g.fillStyle = p % 12 === 4 ? "#c9c4b8" : "#7a808c";
-    g.font = "11px ui-sans-serif";
-    g.fillText(midiName(p), 8, y + 13);
-    g.strokeStyle = "#1c212c"; g.beginPath(); g.moveTo(left, y + rowH); g.lineTo(W, y + rowH); g.stroke();
-  }
-  const bpm = state.tracks[0] && state.tracks[0].bpm;
-  if (bpm) {
-    const bar = 240 / bpm;
-    g.strokeStyle = "#2a3142";
-    for (let t = 0; t < dur + bar; t += bar / 4) {
-      const x = left + t * px;
-      g.globalAlpha = Math.abs(t / bar - Math.round(t / bar)) < 1e-3 ? 0.55 : 0.22;
-      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-    }
-    g.globalAlpha = 1;
-  }
-  for (const n of notes) {
-    const x = left + n.start * px;
-    const w = Math.max(3, (n.end - n.start) * px - 1);
-    const y = (hi - n.pitch) * rowH + 2;
-    g.fillStyle = n.track ? "#6aa6c9" : "#e2a15a";
-    g.globalAlpha = 0.35 + (n.vel / 127) * 0.65;
-    g.fillRect(x, y, w, rowH - 4);
-    g.globalAlpha = 1;
-  }
-  if (playhead != null) {
-    const x = left + playhead * px;
-    g.strokeStyle = "#f3d39a"; g.lineWidth = 1.5;
-    g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-    g.lineWidth = 1;
-  }
-}
-
-function ensureCtx() {
-  if (!state.ctx) state.ctx = new AudioContext();
-  return state.ctx;
-}
-
-function beep(ctx, pitch, start, dur, vel, when) {
-  const o = ctx.createOscillator();
-  const f = ctx.createBiquadFilter();
-  const g = ctx.createGain();
-  o.type = "sawtooth";
-  o.frequency.value = midiHz(pitch);
-  f.type = "lowpass"; f.frequency.value = 420 + pitch * 8;
-  const peak = 0.08 * (vel / 127);
-  g.gain.setValueAtTime(0.0001, when);
-  g.gain.exponentialRampToValueAtTime(peak, when + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-  o.connect(f); f.connect(g); g.connect(ctx.destination);
-  o.start(when); o.stop(when + dur + 0.02);
-  return o;
-}
-
-function stopVoices() {
-  for (const o of state.voices) { try { o.stop(); } catch (_) {} }
-  state.voices = [];
-}
-
-function play() {
-  const notes = allNotes();
-  if (!notes.length) return;
-  const ctx = ensureCtx();
-  if (ctx.state === "suspended") ctx.resume();
-  stopVoices();
-  const now = ctx.currentTime + 0.05;
-  state.t0 = now;
-  state.playing = true;
-  document.getElementById("play").textContent = "일시정지";
-  for (const n of notes) {
-    const dur = Math.max(0.04, n.end - n.start);
-    state.voices.push(beep(ctx, n.pitch, n.start, dur, n.vel, now + n.start));
-  }
-  const tick = () => {
-    if (!state.playing) return;
-    state.playhead = ctx.currentTime - state.t0;
-    draw(state.playhead);
-    const dur = Math.max(0, ...state.tracks.filter(Boolean).map((t) => t.duration));
-    if (state.playhead > dur + 0.2) { stop(); return; }
-    state.timer = requestAnimationFrame(tick);
-  };
-  tick();
-}
-
-function pause() {
-  state.playing = false;
-  stopVoices();
-  if (state.ctx) state.ctx.suspend();
-  document.getElementById("play").textContent = "재생";
-  cancelAnimationFrame(state.timer);
-}
-
-function stop() {
-  pause();
-  state.playhead = 0;
-  if (state.ctx) { state.ctx.resume(); }
-  draw(0);
-}
-
-document.getElementById("play").onclick = () => {
-  if (state.playing) pause(); else play();
-};
-document.getElementById("stop").onclick = stop;
-document.getElementById("files").onchange = async (e) => {
-  const files = [...e.target.files];
-  for (let i = 0; i < files.length; i++) await loadFile(files[i], i);
-};
-const wrap = document.getElementById("roll-wrap");
-wrap.addEventListener("dragover", (e) => { e.preventDefault(); wrap.classList.add("drop"); });
-wrap.addEventListener("dragleave", () => wrap.classList.remove("drop"));
-wrap.addEventListener("drop", async (e) => {
-  e.preventDefault(); wrap.classList.remove("drop");
-  const files = [...e.dataTransfer.files].filter((f) => /\.mid(i)?$/i.test(f.name));
-  for (let i = 0; i < files.length; i++) await loadFile(files[i], i);
-});
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space" && !e.repeat && e.target === document.body) {
-    e.preventDefault();
-    if (state.playing) pause(); else play();
-  }
-});
-window.addEventListener("resize", () => draw(state.playing ? state.playhead : 0));
-
-fetch("/api/midis").then((r) => r.ok ? r.json() : []).then((list) => {
-  if (!list || !list.length) return;
-  const sel = document.getElementById("remote");
-  sel.hidden = false;
-  for (const item of list) {
-    const o = document.createElement("option");
-    o.value = item.url; o.textContent = item.name;
-    sel.appendChild(o);
-  }
-  sel.onchange = async () => {
-    if (!sel.value) return;
-    const buf = await (await fetch(sel.value)).arrayBuffer();
-    const slot = state.tracks[0] ? 1 : 0;
-    loadArray(buf, sel.options[sel.selectedIndex].text, slot);
-  };
-}).catch(() => {});
-draw();
-  </script>
+  <main>
+    <section id="panel-view" class="panel on">
+      <div class="row">
+        <label class="stack">곡
+          <select id="song"></select>
+        </label>
+        <label class="stack">MIDI
+          <select id="midi-kind">
+            <option value="perf">성능 (.mid)</option>
+            <option value="quant">양자화 (.quant.mid)</option>
+            <option value="both">겹쳐 보기</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <button type="button" id="play" disabled>재생</button>
+        <button type="button" id="stop" disabled>정지</button>
+        <button type="button" id="prev-bar">이전 마디</button>
+        <button type="button" id="next-bar">다음 마디</button>
+      </div>
+      <p id="missing" hidden>이 곡의 MIDI가 아직 없습니다. 서버에서 한 번 전사하거나 올리기 탭을 쓰세요.</p>
+      <div id="score-box">
+        <img id="score" alt="출판 악보 마디" hidden />
+        <p id="score-meta"></p>
+      </div>
+      <div id="roll-wrap"><canvas id="roll"></canvas></div>
+      <p id="meta"></p>
+      <p class="hint"><i class="swatch a"></i>성능 MIDI · <i class="swatch b"></i>양자화. 재생하면 기보 마디 크롭이 따라갑니다.</p>
+    </section>
+    <section id="panel-upload" class="panel">
+      <p class="hint">새 베이스 스템을 올리면 서버에서 전사합니다. 수분 걸릴 수 있습니다. 소스 분리는 하지 않습니다.</p>
+      <div id="drop">여기에 놓거나 아래 버튼으로 고르세요<br />wav · mp3 · m4a · flac · ogg · aiff · 최대 30MB</div>
+      <div class="row">
+        <button type="button" id="upload-btn">음원 고르기</button>
+        <input id="file" type="file" accept="audio/*,.m4a,.wav,.mp3,.flac,.ogg,.aiff" hidden />
+      </div>
+      <div class="row">
+        <label class="stack">BPM (비우면 자동)
+          <input id="bpm" type="number" inputmode="decimal" min="40" max="220" placeholder="84" />
+        </label>
+        <label class="stack">그리드
+          <select id="grid">
+            <option value="8">8</option>
+            <option value="16">16</option>
+            <option value="8t">8t</option>
+            <option value="16t">16t</option>
+          </select>
+        </label>
+        <label class="stack">조 (선택)
+          <input id="key" type="text" placeholder='F# minor' />
+        </label>
+      </div>
+      <p id="upload-status"></p>
+      <div id="jobs"></div>
+    </section>
+    <p id="status"></p>
+  </main>
+  <script src="/web/studio.js"></script>
 </body>
 </html>

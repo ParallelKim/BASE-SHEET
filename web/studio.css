@@ -1,0 +1,50 @@
+:root {
+  --bg: #12141a;
+  --panel: #1b1e27;
+  --line: #2c3140;
+  --text: #e8e6e1;
+  --muted: #8b909c;
+  --note: #e2a15a;
+  --note2: #6aa6c9;
+  --play: #f3d39a;
+  --ok: #7dcea0;
+  --bad: #e07a6a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 ui-sans-serif, system-ui, sans-serif; }
+body { padding-bottom: 24px; }
+header {
+  position: sticky; top: 0; z-index: 5;
+  padding: 12px 14px 0; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+h1 { font-size: 17px; margin: 0 0 10px; }
+.tabs { display: flex; gap: 8px; padding-bottom: 10px; }
+.tabs button, button, select, input, .file {
+  background: #252a36; color: var(--text); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 14px; font: inherit; min-height: 44px;
+}
+.tabs button.active { border-color: var(--note); color: var(--play); }
+button { cursor: pointer; }
+button:disabled { opacity: 0.45; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.row select, .row input { flex: 1 1 140px; }
+main { padding: 12px 14px; }
+.panel { display: none; }
+.panel.on { display: block; }
+#score {
+  width: 100%; max-height: 42vh; object-fit: contain; background: #fff;
+  border-radius: 8px; border: 1px solid var(--line);
+}
+#score-meta, #meta, .hint { color: var(--muted); font-size: 13px; }
+#roll-wrap { position: relative; height: 38vh; min-height: 180px; overflow: auto; background: #0e1015; border-radius: 8px; margin-top: 10px; }
+canvas { display: block; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+.a { background: var(--note); } .b { background: var(--note2); }
+label.stack { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; font-size: 13px; color: var(--muted); }
+#drop {
+  border: 2px dashed var(--line); border-radius: 10px; padding: 28px 16px; text-align: center; color: var(--muted);
+}
+#drop.hot { border-color: var(--note); color: var(--play); }
+.job { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+#status { min-height: 1.4em; }
