@@ -1,0 +1,28 @@
+{
+  "hosting": {
+    "public": "web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "predeploy": [
+      "python3 scripts/build_studio_static.py"
+    ],
+    "headers": [
+      {
+        "source": "/data/**/*.mid",
+        "headers": [
+          { "key": "Content-Type", "value": "audio/midi" },
+          { "key": "Cache-Control", "value": "public, max-age=3600" }
+        ]
+      },
+      {
+        "source": "/score_crops/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400" }
+        ]
+      }
+    ]
+  }
+}

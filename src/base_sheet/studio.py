@@ -200,10 +200,41 @@ def list_jobs() -> list[Job]:
     return out
 
 
+STATIC_MIDI = {
+    "ijji": ("ijji.mid", "ijji.quant.mid"),
+    "antifreeze": ("antifreeze.mid", "antifreeze.quant.mid"),
+}
+
+
 def catalog() -> dict:
     songs = fixture_songs()
     songs.extend(job_song(j) for j in list_jobs())
-    return {"songs": songs}
+    return {"songs": songs, "upload_available": True, "static": False}
+
+
+def static_catalog() -> dict:
+    """Catalog for Firebase / Vercel: public MIDI + crop URLs, no upload jobs."""
+    songs = []
+    for song in fixture_songs():
+        names = STATIC_MIDI.get(song["id"])
+        if names:
+            song = {
+                **song,
+                "midi": f"/data/{names[0]}",
+                "quant": f"/data/{names[1]}",
+                "audio": None,
+            }
+        else:
+            song = {**song, "audio": None}
+        n = int(song.get("n_crops") or 0)
+        crop_song = song.get("crop_song")
+        if crop_song and n:
+            song["crops"] = [
+                {"bar": i, "url": f"/score_crops/{crop_song}/m{i:03d}.png"}
+                for i in range(1, n + 1)
+            ]
+        songs.append(song)
+    return {"songs": songs, "upload_available": False, "static": True}
 
 
 def crop_urls(song: str) -> list[dict]:

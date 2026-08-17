@@ -11,6 +11,9 @@ out/
 tests/fixtures/idmt-smt-bass/
 tests/fixtures/ijji_bass.m4a
 *.mid
+!web/data/*.mid
 *.musicxml
 *.xml
 .DS_Store
+.firebase/
+web/score_crops/

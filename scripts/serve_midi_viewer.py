@@ -77,8 +77,14 @@ class Handler(SimpleHTTPRequestHandler):
             song = path.rsplit("/", 1)[-1]
             _json(self, {"crops": crop_urls(song)})
             return
-        if path in ("/", "/web/", "/web/index.html"):
+        if path in ("/", "/index.html", "/web/", "/web/index.html"):
             self.path = "/web/index.html"
+        elif path in ("/studio.js", "/studio.css"):
+            self.path = "/web" + path
+        elif path.startswith("/data/"):
+            self.path = "/web" + path
+        elif path.startswith("/score_crops/"):
+            self.path = "/tests/fixtures" + path
         super().do_GET()
 
     def do_POST(self) -> None:

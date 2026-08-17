@@ -279,14 +279,56 @@ async function loadUrl(url, slot, name) {
   showCrop(writtenAt(0));
 }
 
+async function fetchJson(urls) {
+  const list = Array.isArray(urls) ? urls : [urls];
+  let last = new Error("요청 실패");
+  for (const url of list) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+      last = new Error(url + " " + res.status);
+    } catch (err) {
+      last = err;
+    }
+  }
+  throw last;
+}
+
+function isStaticHost() {
+  return !!(state.catalog && (state.catalog.static || state.catalog.upload_available === false));
+}
+
+function applyHostMode() {
+  const live = !isStaticHost();
+  const liveBox = $("upload-live");
+  const staticNote = $("upload-static");
+  if (liveBox) liveBox.hidden = !live;
+  if (staticNote) staticNote.hidden = live;
+}
+
 async function loadCrops(song) {
   state.crops = [];
+  if (song.crops && song.crops.length) {
+    state.crops = song.crops;
+    showCrop(writtenAt(0));
+    return;
+  }
   if (!song.crop_song) {
     showCrop(null);
     return;
   }
-  const data = await (await fetch("/api/crops/" + song.crop_song)).json();
-  state.crops = data.crops || [];
+  try {
+    const data = await fetchJson("/api/crops/" + song.crop_song);
+    state.crops = data.crops || [];
+  } catch (_) {
+    const n = song.n_crops || 0;
+    for (let i = 1; i <= n; i++) {
+      state.crops.push({
+        bar: i,
+        url: "/score_crops/" + song.crop_song + "/m" + String(i).padStart(3, "0") + ".png",
+      });
+    }
+  }
   showCrop(writtenAt(0));
 }
 
@@ -326,7 +368,8 @@ function fillSongSelect() {
 }
 
 async function refreshCatalog(keepId) {
-  state.catalog = await (await fetch("/api/catalog")).json();
+  state.catalog = await fetchJson(["/api/catalog", "data/catalog.json"]);
+  applyHostMode();
   fillSongSelect();
   const id = keepId || (state.song && state.song.id) || (state.catalog.songs[0] && state.catalog.songs[0].id);
   if (id) {
@@ -336,6 +379,10 @@ async function refreshCatalog(keepId) {
 }
 
 async function submitUpload(file) {
+  if (isStaticHost()) {
+    $("upload-status").textContent = "정적 호스팅에서는 올릴 수 없습니다. 로컬 서버를 켜세요.";
+    return;
+  }
   const fd = new FormData();
   fd.append("audio", file, file.name);
   const bpm = $("bpm").value.trim();
@@ -377,7 +424,18 @@ async function pollJob(id) {
 
 async function renderJobs() {
   const box = $("jobs");
-  const data = await (await fetch("/api/jobs")).json();
+  if (!box) return;
+  if (isStaticHost()) {
+    box.innerHTML = "";
+    return;
+  }
+  let data;
+  try {
+    data = await fetchJson("/api/jobs");
+  } catch (_) {
+    box.innerHTML = "";
+    return;
+  }
   box.innerHTML = "";
   for (const j of data.jobs || []) {
     const div = document.createElement("div");
