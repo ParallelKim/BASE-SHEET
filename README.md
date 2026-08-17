@@ -60,13 +60,12 @@ python scripts/crop_score_bars.py
 
 ```bash
 python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out --bpm 128 --grid 8 --key F#
-# out/Antifreeze_bass_mixed.preview.wav
-# out/Antifreeze_bass_mixed.compare.wav   ← L=stem R=MIDI
-# out/Antifreeze_bass_mixed.musicxml      ← MuseScore
+python -m base_sheet "tests/fixtures/있지 - 자우림_bass_mixed.m4a" -o ./out --bpm 84 --grid 8 --key "F# minor"
+# out/*.preview.wav  out/*.compare.wav(L=스템 R=MIDI)  out/*.musicxml
+python scripts/report_bar_scores.py   # 출판 탭과 마디별 대조, out/listen/
 ```
 
-
-분리가 덜 된 스템은 다른 악기 잔여가 음표로 붙을 수 있습니다. `--min-duration`을 키우거나 `--bpm`을 직접 넣으세요.
+두 픽스처 스템은 킥·다른 저음이 섞일 수 있습니다. 소스 분리는 하지 않습니다. 잔여가 음표로 붙으면 `--min-duration`을 키우거나 `--bpm`을 직접 넣으세요.
 
 같은 음을 8분으로 반복하는 라인(앤티프리즈 인트로)은 `--bpm`과 `--grid 8`을 악보와 맞추세요. 조표는 베이스 음만으로 F#(♯6)이 잘 안 나와 `--key F#`이 필요합니다.
 
@@ -78,16 +77,14 @@ BassLift·NeuralNote는 베이스 스템 픽스처를 넣지 않습니다. Basic
 
 ```bash
 python scripts/fetch_idmt_bass.py
-pytest tests/test_idmt.py -m slow
+pytest -o addopts= -m slow tests/test_idmt.py
 ```
 
-
-`tests/fixtures/Antifreeze_bass_mixed.m4a` — 미리 분리한 베이스. 출판 악보는 `tests/fixtures/Antifreeze_bass_score.pdf`.
+픽스처 스템은 믹스 잔여가 있는 베이스입니다. 악보는 `tests/fixtures/*_bass_score.pdf`.
 
 ```bash
-python -m base_sheet tests/fixtures/Antifreeze_bass_mixed.m4a -o ./out --bpm 128 --grid 8 --key F#
-pytest
-pytest -m slow
+pytest                         # 빠른 테스트 (slow 제외)
+pytest -o addopts= -m slow     # 있지 / Antifreeze / IDMT 스템
 ```
 
 ## CLI

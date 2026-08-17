@@ -22,7 +22,7 @@ SECTION_FLOORS = {
 def ijji_run(tmp_path_factory):
     stem = fixture_path()
     if stem is None:
-        pytest.skip("place tests/fixtures/ijji_bass.m4a or the uploaded stem")
+        pytest.skip("place 있지 - 자우림_bass_mixed.m4a (or ijji_bass.m4a) in tests/fixtures")
     out = tmp_path_factory.mktemp("ijji")
     result = run(
         stem,

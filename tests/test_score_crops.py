@@ -16,6 +16,14 @@ def test_published_score_pdfs_are_in_fixtures():
     assert (fixtures / "Antifreeze_bass_score.pdf").stat().st_size > 10_000
 
 
+def test_mixed_stems_are_in_fixtures():
+    fixtures = ROOT / "tests" / "fixtures"
+    af = fixtures / "Antifreeze_bass_mixed.m4a"
+    ijji = fixtures / "있지 - 자우림_bass_mixed.m4a"
+    assert af.is_file() and af.stat().st_size > 100_000
+    assert ijji.is_file() and ijji.stat().st_size > 100_000
+
+
 def test_ijji_bar_crops_cover_72_measures():
     bars = sorted((CROPS / "ijji").glob("m*.png"))
     assert [p.name for p in bars] == [f"m{i:03d}.png" for i in range(1, 73)]

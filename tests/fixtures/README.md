@@ -8,7 +8,7 @@
 |---|---|
 | `ijji_bass_score.pdf` | 자우림 「있지」 출판 베이스 악보 (akbobada) |
 | `Antifreeze_bass_score.pdf` | Antifreeze 출판 베이스 악보 |
-| `Antifreeze_bass_mixed.m4a` | Antifreeze 미리 분리한 베이스 스템 |
+| `Antifreeze_bass_mixed.m4a` | Antifreeze 베이스 스템 (믹스 잔여 있음) |
 | `있지 - 자우림_bass_mixed.m4a` | 있지 베이스 스템 (믹스 잔여 있음). 식별자는 계속 `ijji` |
 | `score_crops/ijji/m001.png` … `m072.png` | 있지 기보 마디 크롭 |
 | `score_crops/antifreeze/m001.png` … `m080.png` | Antifreeze 기보 마디 크롭 |
@@ -19,6 +19,7 @@
 
 ```bash
 python scripts/crop_score_bars.py
+python scripts/report_bar_scores.py   # 스템 vs 차트, out/listen/
 ```
 
 ## 커밋하지 않는 것

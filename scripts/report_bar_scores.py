@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Transcribe the two fixture stems and list per-bar pitch vs the chart.
+"""Transcribe the two mixed fixture stems and list per-bar pitch vs the chart.
+
+있지: ``ijji_eval.fixture_path()`` (``있지 - 자우림_bass_mixed.m4a`` or ``ijji_bass.m4a``).
+Antifreeze: ``tests/fixtures/Antifreeze_bass_mixed.m4a``.
 
 Writes compare.wav (L=stem R=MIDI) and a text report. Does not change charts.
 """

@@ -14,13 +14,15 @@
 
 - 패키지: `src/base_sheet/`. 기본 엔진은 torchcrepe(16 kHz / 10 ms, viterbi). Basic Pitch는 기본값이 아니다.
 - slap 스펙트럼 피크 재조율, 타이트 NMS, Antifreeze 8분을 붙이는 처리를 다시 넣지 않는다.
-- 있지: `--bpm 84 --grid 8 --key "F# minor"`. 식별자 `ijji` = 「있지」(잊지 아님).
-- Antifreeze: `--bpm 128 --grid 8 --key F#`.
+- 있지: `--bpm 84 --grid 8 --key "F# minor"`. 식별자 `ijji` = 「있지」(잊지 아님). `ijji*` 이름을 바꾸지 않는다.
+- Antifreeze: `--bpm 128 --grid 8 --key F#`. PLAY는 126 연주 마디 (`tests/antifreeze_chart.py`).
+- 두 픽스처 스템은 믹스 잔여(킥·다른 저음)가 있다. 소스 분리·킥 게이트를 넣지 않는다.
+- 마디 오차: `python scripts/report_bar_scores.py`.
 
 ## 저장소
 
-팀에 공유하려고 커밋함: 출판 악보 PDF (`tests/fixtures/*_bass_score.pdf`), 마디 크롭, [docs/chart-verification.md](docs/chart-verification.md).
+커밋함: 출판 악보 PDF, 마디 크롭, Antifreeze 스템, 있지 믹스 스템(`있지 - 자우림_bass_mixed.m4a`), [docs/chart-verification.md](docs/chart-verification.md).
 
-커밋하지 않음: 있지 스템(`ijji_bass.m4a`), IDMT wav (CC BY-NC-ND 재배포 금지). Antifreeze 스템 m4a는 이미 픽스처에 있다.
+커밋하지 않음: `ijji_bass.m4a` (`.gitignore` 로컬 이름), IDMT wav (CC BY-NC-ND 재배포 금지).
 
-섹션별 테스트와 전곡 통합을 유지한다. 한 점수로 섞지 않는다. 차트만 바꾼 뒤 느린 스템 하한을 맞추려고 진리 피치를 깎지 않는다.
+섹션별 테스트와 전곡 통합을 유지한다. 한 점수로 섞지 않는다. 차트만 바꾼 뒤 느린 스템 하한을 맞추려고 진리 피치를 깎지 않는다. 느린 테스트는 `pytest -o addopts= -m slow` (`addopts`가 `-m 'not slow'`).

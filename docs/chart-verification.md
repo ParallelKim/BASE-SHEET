@@ -23,6 +23,7 @@
 | 페이지 렌더 | `tests/fixtures/score_crops/{ijji,antifreeze}/pages/pN.png` |
 | 크롭 박스 | `tests/fixtures/score_crops/manifest.json` |
 | 크롭 스크립트 | `scripts/crop_score_bars.py` |
+| 스템 vs 차트 마디 리포트 | `scripts/report_bar_scores.py` |
 
 식별자 `ijji`는 자우림 **「있지」**다. 「잊지」가 아니다. `ijji*` 파일명을 바꾸지 않는다.
 
@@ -73,7 +74,7 @@ python scripts/crop_score_bars.py
 
 ### 5. 크롭 패딩 함정
 
-상하 패딩이 커서 **위·아래 단이 같이 들어온다.**  vison/OCR이 이웃 마디를 본 마디라고 단정한다.
+상하 패딩이 커서 **위·아래 단이 같이 들어온다.** 비전/OCR이 이웃 마디를 본 마디라고 단정한다.
 
 - 파일명 마디와 **인쇄 숫자**가 다르면 이웃이다. 쓰지 않는다.
 - 한 크롭에 8분 페달과 필 스태프가 같이 있으면, 본선(보통 위 베이스 단)만 잠근다. `<2x>` 반음 스태프는 채점 라인이 아니다.
@@ -123,16 +124,16 @@ OCR로 채운 필·루프는 특히 다시 본다. 이 프로젝트에서 실제
 
 ### 9. 커밋 범위
 
-커밋하지 않는다: 있지 스템(`ijji_bass.m4a`), IDMT wav (재배포 금지).
-출판 악보 PDF·마디 크롭·이 문서는 팀에 공유하려고 커밋한다.
-
-크롭 PNG·차트·테스트·이 문서는 커밋한다.
+커밋하지 않는다: `ijji_bass.m4a`(로컬 이름), IDMT wav (재배포 금지).
+커밋한다: 출판 악보 PDF, 마디 크롭, 이 문서, `Antifreeze_bass_mixed.m4a`, `있지 - 자우림_bass_mixed.m4a`.
 
 ```bash
-pytest -m "not slow"
+pytest                         # addopts가 slow 제외
+pytest -o addopts= -m slow     # 스템 전사
+python scripts/report_bar_scores.py
 ```
 
-스템 전사(`pytest -m slow`)는 차트 잠금 다음에 돌린다. 차트만 바꾸고 하한을 맞추려고 피치를 깎지 않는다.
+스템 전사는 차트 잠금 다음에 돌린다. 차트만 바꾸고 하한을 맞추려고 피치를 깎지 않는다.
 
 ## MIDI (4현 표준)
 
@@ -144,7 +145,7 @@ CLI: 있지 `--bpm 84 --grid 8 --key "F# minor"` (인쇄 ♩=83). Antifreeze `--
 
 ## PLAY (연주 순)
 
-있지: 1–72, 반복 없음.
+있지: 1–72, 반복 없음. 테스트 섹션 이름 `coda_a`/`coda_b`는 61–72 구간일 뿐, 악보 코다 점프가 아니다.
 
 Antifreeze 126마디 (`Antifreeze_bass_mixed.m4a`):
 
@@ -164,6 +165,6 @@ Antifreeze 126마디 (`Antifreeze_bass_mixed.m4a`):
 - 추측 근음을 `lock=score`로 두기
 - 전곡을 한 점수로 합쳐 하한만 맞추기
 - `ijji*` 이름을 「잊지」 쪽으로 바꾸기
-- 있지 스템(`ijji_bass.m4a`)·IDMT를 커밋하기. 악보 PDF와 크롭은 커밋한다.
+- `ijji_bass.m4a`·IDMT를 커밋하기. 믹스 스템 `있지 - 자우림_bass_mixed.m4a`는 이미 픽스처다.
 - 파이프라인 기본값을 Basic Pitch로 두기, slap 스펙트럼 피크 재조율, 타이트 NMS, Antifreeze 8분을 붙이기
 - 크롭 비전 캡션의 옥타브(A-string 0 = A2 같은 말)를 그대로 믿기. A현 개방은 A1=33이다.
