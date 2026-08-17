@@ -4,7 +4,7 @@
 
 저장소 전체를 복제하지 않고, CREPE Notes·BassLift·Basic Pitch/NeuralNote·music21에서 **후처리 알고리즘만** 가져옵니다. 출처는 [THIRD_PARTY.md](THIRD_PARTY.md)를 보세요.
 
-현재 태그는 **v0.1.0** — MVP 초안(1차 구현 및 테스트 환경 구성). 범위와 한계는 [CHANGELOG.md](CHANGELOG.md)를 보세요.
+현재 태그는 **v0.2.0** — 차트·PLAY·믹스 스템 채점. 범위와 한계는 [CHANGELOG.md](CHANGELOG.md)를 보세요. v0.1.0은 MVP 초안입니다.
 
 ## 설치
 
