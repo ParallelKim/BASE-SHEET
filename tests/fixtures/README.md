@@ -9,6 +9,7 @@
 | `ijji_bass_score.pdf` | 자우림 「있지」 출판 베이스 악보 (akbobada) |
 | `Antifreeze_bass_score.pdf` | Antifreeze 출판 베이스 악보 |
 | `Antifreeze_bass_mixed.m4a` | Antifreeze 미리 분리한 베이스 스템 |
+| `있지 - 자우림_bass_mixed.m4a` | 있지 베이스 스템 (믹스 잔여 있음). 식별자는 계속 `ijji` |
 | `score_crops/ijji/m001.png` … `m072.png` | 있지 기보 마디 크롭 |
 | `score_crops/antifreeze/m001.png` … `m080.png` | Antifreeze 기보 마디 크롭 |
 | `score_crops/*/pages/pN.png` | 페이지 전체 |
@@ -22,5 +23,5 @@ python scripts/crop_score_bars.py
 
 ## 커밋하지 않는 것
 
-- `ijji_bass.m4a` — 있지 스템 (`.gitignore`). 로컬에 두면 느린 테스트가 쓴다.
+- `ijji_bass.m4a` — 예전 로컬 이름 (`.gitignore`). 없으면 `있지 - 자우림_bass_mixed.m4a`를 쓴다.
 - `idmt-smt-bass/` — IDMT-SMT-Bass는 CC BY-NC-ND라 재배포하지 않는다. `python scripts/fetch_idmt_bass.py`.

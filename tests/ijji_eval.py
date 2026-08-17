@@ -17,11 +17,15 @@ UPLOAD_STEM = (
     / "______-________-bass-F__minor-84bpm-440hz_9aa2.m4a"
 )
 FIXTURE = Path(__file__).parent / "fixtures" / "ijji_bass.m4a"
+# GitHub upload; mixed (kick/bleed). Do not rename — identifier stays ijji.
+MIXED_FIXTURE = Path(__file__).parent / "fixtures" / "있지 - 자우림_bass_mixed.m4a"
 
 
 def fixture_path() -> Path | None:
     if FIXTURE.is_file():
         return FIXTURE
+    if MIXED_FIXTURE.is_file():
+        return MIXED_FIXTURE
     if UPLOAD_STEM.is_file():
         return UPLOAD_STEM
     return None
