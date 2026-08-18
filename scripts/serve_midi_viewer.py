@@ -11,6 +11,7 @@ import argparse
 import cgi
 import json
 import mimetypes
+import os
 import sys
 import webbrowser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -132,7 +133,7 @@ class Handler(SimpleHTTPRequestHandler):
 def main() -> int:
     parser = argparse.ArgumentParser(description="Serve the BASE-SHEET studio")
     parser.add_argument("--host", default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8765")))
     parser.add_argument("--no-open", action="store_true")
     args = parser.parse_args()
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from base_sheet.studio import catalog, crop_urls, create_job, static_catalog, written_bar
+from base_sheet.studio import Job, catalog, crop_urls, create_job, job_song, static_catalog, written_bar
 
 
 def test_midi_viewer_page_exists():
@@ -19,6 +19,10 @@ def test_midi_viewer_page_exists():
     assert (root / "vercel.json").is_file()
     assert "build_studio_static" in (root / "firebase.json").read_text(encoding="utf-8")
     assert "build_studio_static" in (root / "vercel.json").read_text(encoding="utf-8")
+    dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+    assert "7860" in dockerfile
+    assert "torchcrepe" in dockerfile
+    assert "serve_midi_viewer.py" in dockerfile
 
 
 def test_studio_catalog_lists_fixture_songs():
@@ -29,6 +33,8 @@ def test_studio_catalog_lists_fixture_songs():
     ijji = next(s for s in data["songs"] if s["id"] == "ijji")
     assert ijji["n_written"] == 72
     assert ijji["play"][0] == 1
+    assert ijji["midi"]
+    assert ijji["quant"]
     af = next(s for s in data["songs"] if s["id"] == "antifreeze")
     assert len(af["play"]) == 126
     assert af["play"][24] == 9
@@ -60,6 +66,25 @@ def test_hosted_midi_and_catalog_are_committed():
     payload = json.loads(catalog_path.read_text(encoding="utf-8"))
     assert payload["static"] is True
     assert payload["upload_available"] is False
+
+
+def test_job_song_exposes_preview_wav(monkeypatch, tmp_path):
+    import base_sheet.studio as studio
+
+    monkeypatch.setattr(studio, "JOBS", tmp_path)
+    monkeypatch.setattr(studio, "ROOT", tmp_path)
+    d = tmp_path / "abc"
+    d.mkdir()
+    (d / "x.mid").write_bytes(b"MThd")
+    (d / "x.quant.mid").write_bytes(b"MThd")
+    (d / "x.preview.wav").write_bytes(b"RIFF")
+    (d / "x.compare.wav").write_bytes(b"RIFF")
+    job = Job(id="abc", status="done", name="x.wav", bpm=84.0, grid="8", key=None)
+    song = job_song(job)
+    assert song["midi"] == "/abc/x.mid"
+    assert song["quant"] == "/abc/x.quant.mid"
+    assert song["preview"] == "/abc/x.preview.wav"
+    assert song["compare"] == "/abc/x.compare.wav"
 
 
 def test_studio_crops_cover_printed_bars():

@@ -42,11 +42,20 @@
       <div id="roll-wrap"><canvas id="roll"></canvas></div>
       <p id="meta"></p>
       <p class="hint"><i class="swatch a"></i>성능 MIDI · <i class="swatch b"></i>양자화. 재생하면 기보 마디 크롭이 따라갑니다.</p>
+      <div id="listen-box" hidden>
+        <label class="stack">미리듣기
+          <select id="listen-kind">
+            <option value="preview">MIDI 톤 (.preview.wav)</option>
+            <option value="compare">비교 (왼쪽=스템, 오른쪽=MIDI)</option>
+          </select>
+        </label>
+        <audio id="listen" controls playsinline></audio>
+      </div>
     </section>
     <section id="panel-upload" class="panel">
-      <p id="upload-static" class="hint" hidden>이 주소는 보기 전용입니다. 전사는 torchcrepe가 수분 걸려서 Firebase/Vercel에서 돌리지 않습니다. 올리려면 로컬에서 <code>python scripts/serve_midi_viewer.py</code> 를 켜세요.</p>
+      <p id="upload-static" class="hint" hidden>이 주소는 보기 전용입니다. 휴대폰에서 변환하려면 Hugging Face Space(Docker, 무료 CPU)에 올리세요.</p>
       <div id="upload-live">
-      <p class="hint">새 베이스 스템을 올리면 서버에서 전사합니다. 수분 걸릴 수 있습니다. 소스 분리는 하지 않습니다.</p>
+      <p class="hint">새 베이스 스템을 올리면 서버에서 전사합니다. CPU면 꽤 걸릴 수 있습니다. 소스 분리는 하지 않습니다.</p>
       <div id="drop">여기에 놓거나 아래 버튼으로 고르세요<br />wav · mp3 · m4a · flac · ogg · aiff · 최대 30MB</div>
       <div class="row">
         <button type="button" id="upload-btn">음원 고르기</button>

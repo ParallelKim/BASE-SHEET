@@ -341,6 +341,7 @@ async function selectSong(id) {
   $("score-box").hidden = !(song && song.crop_song);
   if (!song) return;
   await loadCrops(song);
+  applyListenSource();
   const which = $("midi-kind").value;
   if (which === "both" && song.midi && song.quant) {
     await loadUrl(song.midi, 0, "성능");
@@ -398,7 +399,7 @@ async function submitUpload(file) {
     $("upload-status").textContent = data.error || "실패";
     return;
   }
-  $("upload-status").textContent = "대기열에 넣었습니다. 전사는 수분 걸릴 수 있습니다.";
+  $("upload-status").textContent = "대기열에 넣었습니다. CPU 전사라 꽤 걸릴 수 있습니다. 이 화면을 유지하세요.";
   pollJob(data.id || data.job_id);
 }
 
@@ -467,7 +468,42 @@ function bind() {
     if (f) submitUpload(f);
   });
   $("upload-btn").onclick = () => $("file").click();
+  const listen = $("listen");
+  if (listen) {
+    listen.addEventListener("play", () => pause());
+    listen.addEventListener("timeupdate", () => {
+      if (!listen.paused) {
+        state.playhead = listen.currentTime;
+        draw(state.playhead);
+      }
+    });
+  }
+  const listenKind = $("listen-kind");
+  if (listenKind) listenKind.onchange = () => applyListenSource();
   window.addEventListener("resize", () => draw(state.playing ? state.playhead : 0));
+}
+
+function applyListenSource() {
+  const box = $("listen-box");
+  const audio = $("listen");
+  const kind = $("listen-kind");
+  if (!box || !audio) return;
+  const song = state.song;
+  const preview = song && song.preview;
+  const compare = song && song.compare;
+  box.hidden = !(preview || compare);
+  if (box.hidden) {
+    audio.removeAttribute("src");
+    return;
+  }
+  if (kind) {
+    kind.querySelector('option[value="preview"]').disabled = !preview;
+    kind.querySelector('option[value="compare"]').disabled = !compare;
+    if (kind.value === "preview" && !preview) kind.value = "compare";
+    if (kind.value === "compare" && !compare) kind.value = "preview";
+  }
+  const url = (kind && kind.value === "compare" && compare) || preview || compare;
+  if (url && audio.getAttribute("src") !== url) audio.src = url;
 }
 
 function nudgeBar(delta) {

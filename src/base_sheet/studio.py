@@ -20,8 +20,13 @@ OUT = ROOT / "out"
 LISTEN = OUT / "listen"
 JOBS = OUT / "jobs"
 CROPS = ROOT / "tests" / "fixtures" / "score_crops"
+WEB_DATA = ROOT / "web" / "data"
 MAX_UPLOAD_BYTES = 30 * 1024 * 1024
 AUDIO_SUFFIXES = {".wav", ".mp3", ".m4a", ".aiff", ".aif", ".flac", ".ogg"}
+STATIC_MIDI = {
+    "ijji": ("ijji.mid", "ijji.quant.mid"),
+    "antifreeze": ("antifreeze.mid", "antifreeze.quant.mid"),
+}
 
 _queue: list[str] = []
 _q_lock = threading.Lock()
@@ -96,7 +101,33 @@ def _quant_for(midi: Path | None) -> Path | None:
 def _rel(path: Path | None) -> str | None:
     if path is None:
         return None
-    return "/" + path.resolve().relative_to(ROOT).as_posix()
+    resolved = path.resolve()
+    try:
+        return "/" + resolved.relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return None
+
+
+def _packaged_midi(song_id: str) -> Path | None:
+    names = STATIC_MIDI.get(song_id)
+    if not names:
+        return None
+    path = WEB_DATA / names[0]
+    return path if path.is_file() else None
+
+
+def _packaged_quant(song_id: str) -> Path | None:
+    names = STATIC_MIDI.get(song_id)
+    if not names:
+        return None
+    path = WEB_DATA / names[1]
+    return path if path.is_file() else None
+
+
+def _song_midi(song_id: str, patterns: list[str]) -> tuple[Path | None, Path | None]:
+    midi = _first_midi(patterns) or _packaged_midi(song_id)
+    quant = _quant_for(midi) or _packaged_quant(song_id)
+    return midi, quant
 
 
 def _audio_ijji() -> Path | None:
@@ -106,8 +137,10 @@ def _audio_ijji() -> Path | None:
 
 
 def fixture_songs() -> list[dict]:
-    ijji_midi = _first_midi(["*있지*.mid", "*ijji*.mid"])
-    af_midi = _first_midi(["*Antifreeze*.mid", "*antifreeze*.mid"])
+    ijji_midi, ijji_quant = _song_midi("ijji", ["*있지*.mid", "*ijji*.mid"])
+    af_midi, af_quant = _song_midi("antifreeze", ["*Antifreeze*.mid", "*antifreeze*.mid"])
+    ijji_audio = _audio_ijji()
+    af_audio = ROOT / "tests" / "fixtures" / "Antifreeze_bass_mixed.m4a"
     return [
         {
             "id": "ijji",
@@ -129,8 +162,8 @@ def fixture_songs() -> list[dict]:
                 "coda_b": [64, 72],
             },
             "midi": _rel(ijji_midi),
-            "quant": _rel(_quant_for(ijji_midi)),
-            "audio": _rel(_audio_ijji()) if _audio_ijji() else None,
+            "quant": _rel(ijji_quant),
+            "audio": _rel(ijji_audio) if ijji_audio and ijji_audio.is_file() else None,
             "crop_song": "ijji",
             "n_crops": 72,
         },
@@ -155,8 +188,8 @@ def fixture_songs() -> list[dict]:
                 "late": [102, 200],
             },
             "midi": _rel(af_midi),
-            "quant": _rel(_quant_for(af_midi)),
-            "audio": _rel(ROOT / "tests" / "fixtures" / "Antifreeze_bass_mixed.m4a"),
+            "quant": _rel(af_quant),
+            "audio": _rel(af_audio) if af_audio.is_file() else None,
             "crop_song": "antifreeze",
             "n_crops": 80,
         },
@@ -167,6 +200,9 @@ def job_song(job: Job) -> dict:
     d = job.dir()
     midis = sorted(d.glob("*.mid"))
     performed = next((p for p in midis if ".quant." not in p.name), None)
+    preview = next(iter(sorted(d.glob("*.preview.wav"))), None)
+    compare = next(iter(sorted(d.glob("*.compare.wav"))), None)
+    done = job.status == "done"
     return {
         "id": f"job-{job.id}",
         "title": job.name,
@@ -180,8 +216,10 @@ def job_song(job: Job) -> dict:
         "n_written": 0,
         "play": [],
         "sections": {},
-        "midi": _rel(performed) if job.status == "done" else None,
-        "quant": _rel(_quant_for(performed)) if job.status == "done" else None,
+        "midi": _rel(performed) if done else None,
+        "quant": _rel(_quant_for(performed)) if done else None,
+        "preview": _rel(preview) if done else None,
+        "compare": _rel(compare) if done else None,
         "audio": None,
         "crop_song": None,
         "n_crops": 0,
@@ -198,12 +236,6 @@ def list_jobs() -> list[Job]:
         if job:
             out.append(job)
     return out
-
-
-STATIC_MIDI = {
-    "ijji": ("ijji.mid", "ijji.quant.mid"),
-    "antifreeze": ("antifreeze.mid", "antifreeze.quant.mid"),
-}
 
 
 def catalog() -> dict:

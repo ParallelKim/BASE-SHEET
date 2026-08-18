@@ -1,0 +1,14 @@
+.git
+.venv
+venv
+out
+.pytest_cache
+.mypy_cache
+.firebase
+__pycache__
+*.pyc
+tests/fixtures/idmt-smt-bass
+tests/fixtures/*.m4a
+tests/fixtures/*.pdf
+tests/fixtures/ijji_bass.m4a
+web/score_crops
