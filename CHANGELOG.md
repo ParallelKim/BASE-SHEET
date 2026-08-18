@@ -4,7 +4,7 @@
 
 웹 스튜디오: 픽스처 MIDI·출판 크롭 대조, 새 스템 업로드 후 전사 (`python scripts/serve_midi_viewer.py`).
 
-정적 호스팅(보기 전용): `scripts/build_studio_static.py` → `web/`. Firebase Hosting·Vercel 설정은 [docs/hosting.md](docs/hosting.md). 업로드/전사는 로컬 서버만.
+정적 호스팅(보기 전용, 무료): `scripts/build_studio_static.py` → `web/`. 업로드·전사는 로컬(+ Cloudflare 터널). 유료 서버는 쓰지 않음. [docs/hosting.md](docs/hosting.md).
 
 ## 0.2.0 — 차트·PLAY·믹스 스템 채점
 

@@ -47,12 +47,11 @@ python scripts/serve_midi_viewer.py
 # 올리기: wav/mp3/m4a 업로드 → 서버에서 파이프라인 실행
 ```
 
-공개 URL(보기 전용)은 Firebase Hosting 또는 Vercel에 올립니다. 전사는 서버리스에서 돌리지 않습니다. 절차는 [docs/hosting.md](docs/hosting.md).
+공개 URL은 **보기만** 무료 정적 호스팅(Vercel Hobby 등)에 올립니다. 새 스템 업로드·전사는 로컬 서버(필요하면 Cloudflare 터널)입니다. 카드·유료 VM은 쓰지 않습니다. 절차는 [docs/hosting.md](docs/hosting.md).
 
 ```bash
 python3 scripts/build_studio_static.py
-npx -y vercel@latest          # 또는
-npx -y firebase-tools@latest deploy --only hosting
+npx -y vercel@latest
 ```
 
 **악보** — `.musicxml`을 [MuseScore](https://musescore.org/)에서 엽니다. GarageBand/Logic/Guitar Pro도 MusicXML·MIDI를 읽습니다. 출판 탭과 비교할 때는 양자화 파일(`.quant.mid`, `.musicxml`)을 보세요. 스템과 음이 같은지는 양자화 전 `.mid` / `.preview.wav`가 맞습니다.
