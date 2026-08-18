@@ -1,0 +1,914 @@
+{
+  "songs": [
+    {
+      "id": "ijji",
+      "title": "있지 (자우림)",
+      "kind": "fixture",
+      "bpm": 84.0,
+      "key": "F# minor",
+      "grid": "8",
+      "t0": 1.0714,
+      "n_written": 72,
+      "play": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72
+      ],
+      "sections": {
+        "tacet": [
+          0,
+          12
+        ],
+        "verse": [
+          12,
+          24
+        ],
+        "chorus": [
+          24,
+          32
+        ],
+        "inst": [
+          32,
+          44
+        ],
+        "drive": [
+          44,
+          60
+        ],
+        "coda_a": [
+          60,
+          64
+        ],
+        "coda_b": [
+          64,
+          72
+        ]
+      },
+      "midi": "/data/ijji.mid",
+      "quant": "/data/ijji.quant.mid",
+      "audio": null,
+      "crop_song": "ijji",
+      "n_crops": 72,
+      "crops": [
+        {
+          "bar": 1,
+          "url": "/score_crops/ijji/m001.png"
+        },
+        {
+          "bar": 2,
+          "url": "/score_crops/ijji/m002.png"
+        },
+        {
+          "bar": 3,
+          "url": "/score_crops/ijji/m003.png"
+        },
+        {
+          "bar": 4,
+          "url": "/score_crops/ijji/m004.png"
+        },
+        {
+          "bar": 5,
+          "url": "/score_crops/ijji/m005.png"
+        },
+        {
+          "bar": 6,
+          "url": "/score_crops/ijji/m006.png"
+        },
+        {
+          "bar": 7,
+          "url": "/score_crops/ijji/m007.png"
+        },
+        {
+          "bar": 8,
+          "url": "/score_crops/ijji/m008.png"
+        },
+        {
+          "bar": 9,
+          "url": "/score_crops/ijji/m009.png"
+        },
+        {
+          "bar": 10,
+          "url": "/score_crops/ijji/m010.png"
+        },
+        {
+          "bar": 11,
+          "url": "/score_crops/ijji/m011.png"
+        },
+        {
+          "bar": 12,
+          "url": "/score_crops/ijji/m012.png"
+        },
+        {
+          "bar": 13,
+          "url": "/score_crops/ijji/m013.png"
+        },
+        {
+          "bar": 14,
+          "url": "/score_crops/ijji/m014.png"
+        },
+        {
+          "bar": 15,
+          "url": "/score_crops/ijji/m015.png"
+        },
+        {
+          "bar": 16,
+          "url": "/score_crops/ijji/m016.png"
+        },
+        {
+          "bar": 17,
+          "url": "/score_crops/ijji/m017.png"
+        },
+        {
+          "bar": 18,
+          "url": "/score_crops/ijji/m018.png"
+        },
+        {
+          "bar": 19,
+          "url": "/score_crops/ijji/m019.png"
+        },
+        {
+          "bar": 20,
+          "url": "/score_crops/ijji/m020.png"
+        },
+        {
+          "bar": 21,
+          "url": "/score_crops/ijji/m021.png"
+        },
+        {
+          "bar": 22,
+          "url": "/score_crops/ijji/m022.png"
+        },
+        {
+          "bar": 23,
+          "url": "/score_crops/ijji/m023.png"
+        },
+        {
+          "bar": 24,
+          "url": "/score_crops/ijji/m024.png"
+        },
+        {
+          "bar": 25,
+          "url": "/score_crops/ijji/m025.png"
+        },
+        {
+          "bar": 26,
+          "url": "/score_crops/ijji/m026.png"
+        },
+        {
+          "bar": 27,
+          "url": "/score_crops/ijji/m027.png"
+        },
+        {
+          "bar": 28,
+          "url": "/score_crops/ijji/m028.png"
+        },
+        {
+          "bar": 29,
+          "url": "/score_crops/ijji/m029.png"
+        },
+        {
+          "bar": 30,
+          "url": "/score_crops/ijji/m030.png"
+        },
+        {
+          "bar": 31,
+          "url": "/score_crops/ijji/m031.png"
+        },
+        {
+          "bar": 32,
+          "url": "/score_crops/ijji/m032.png"
+        },
+        {
+          "bar": 33,
+          "url": "/score_crops/ijji/m033.png"
+        },
+        {
+          "bar": 34,
+          "url": "/score_crops/ijji/m034.png"
+        },
+        {
+          "bar": 35,
+          "url": "/score_crops/ijji/m035.png"
+        },
+        {
+          "bar": 36,
+          "url": "/score_crops/ijji/m036.png"
+        },
+        {
+          "bar": 37,
+          "url": "/score_crops/ijji/m037.png"
+        },
+        {
+          "bar": 38,
+          "url": "/score_crops/ijji/m038.png"
+        },
+        {
+          "bar": 39,
+          "url": "/score_crops/ijji/m039.png"
+        },
+        {
+          "bar": 40,
+          "url": "/score_crops/ijji/m040.png"
+        },
+        {
+          "bar": 41,
+          "url": "/score_crops/ijji/m041.png"
+        },
+        {
+          "bar": 42,
+          "url": "/score_crops/ijji/m042.png"
+        },
+        {
+          "bar": 43,
+          "url": "/score_crops/ijji/m043.png"
+        },
+        {
+          "bar": 44,
+          "url": "/score_crops/ijji/m044.png"
+        },
+        {
+          "bar": 45,
+          "url": "/score_crops/ijji/m045.png"
+        },
+        {
+          "bar": 46,
+          "url": "/score_crops/ijji/m046.png"
+        },
+        {
+          "bar": 47,
+          "url": "/score_crops/ijji/m047.png"
+        },
+        {
+          "bar": 48,
+          "url": "/score_crops/ijji/m048.png"
+        },
+        {
+          "bar": 49,
+          "url": "/score_crops/ijji/m049.png"
+        },
+        {
+          "bar": 50,
+          "url": "/score_crops/ijji/m050.png"
+        },
+        {
+          "bar": 51,
+          "url": "/score_crops/ijji/m051.png"
+        },
+        {
+          "bar": 52,
+          "url": "/score_crops/ijji/m052.png"
+        },
+        {
+          "bar": 53,
+          "url": "/score_crops/ijji/m053.png"
+        },
+        {
+          "bar": 54,
+          "url": "/score_crops/ijji/m054.png"
+        },
+        {
+          "bar": 55,
+          "url": "/score_crops/ijji/m055.png"
+        },
+        {
+          "bar": 56,
+          "url": "/score_crops/ijji/m056.png"
+        },
+        {
+          "bar": 57,
+          "url": "/score_crops/ijji/m057.png"
+        },
+        {
+          "bar": 58,
+          "url": "/score_crops/ijji/m058.png"
+        },
+        {
+          "bar": 59,
+          "url": "/score_crops/ijji/m059.png"
+        },
+        {
+          "bar": 60,
+          "url": "/score_crops/ijji/m060.png"
+        },
+        {
+          "bar": 61,
+          "url": "/score_crops/ijji/m061.png"
+        },
+        {
+          "bar": 62,
+          "url": "/score_crops/ijji/m062.png"
+        },
+        {
+          "bar": 63,
+          "url": "/score_crops/ijji/m063.png"
+        },
+        {
+          "bar": 64,
+          "url": "/score_crops/ijji/m064.png"
+        },
+        {
+          "bar": 65,
+          "url": "/score_crops/ijji/m065.png"
+        },
+        {
+          "bar": 66,
+          "url": "/score_crops/ijji/m066.png"
+        },
+        {
+          "bar": 67,
+          "url": "/score_crops/ijji/m067.png"
+        },
+        {
+          "bar": 68,
+          "url": "/score_crops/ijji/m068.png"
+        },
+        {
+          "bar": 69,
+          "url": "/score_crops/ijji/m069.png"
+        },
+        {
+          "bar": 70,
+          "url": "/score_crops/ijji/m070.png"
+        },
+        {
+          "bar": 71,
+          "url": "/score_crops/ijji/m071.png"
+        },
+        {
+          "bar": 72,
+          "url": "/score_crops/ijji/m072.png"
+        }
+      ]
+    },
+    {
+      "id": "antifreeze",
+      "title": "Antifreeze",
+      "kind": "fixture",
+      "bpm": 128.0,
+      "key": "F#",
+      "grid": "8",
+      "t0": 0.7031,
+      "n_written": 80,
+      "play": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "sections": {
+        "intro": [
+          0,
+          8
+        ],
+        "verse": [
+          8,
+          16
+        ],
+        "middle_a": [
+          16,
+          40
+        ],
+        "middle_b": [
+          40,
+          48
+        ],
+        "vamp": [
+          48,
+          74
+        ],
+        "pedal": [
+          74,
+          78
+        ],
+        "chorus": [
+          78,
+          102
+        ],
+        "late": [
+          102,
+          200
+        ]
+      },
+      "midi": "/data/antifreeze.mid",
+      "quant": "/data/antifreeze.quant.mid",
+      "audio": null,
+      "crop_song": "antifreeze",
+      "n_crops": 80,
+      "crops": [
+        {
+          "bar": 1,
+          "url": "/score_crops/antifreeze/m001.png"
+        },
+        {
+          "bar": 2,
+          "url": "/score_crops/antifreeze/m002.png"
+        },
+        {
+          "bar": 3,
+          "url": "/score_crops/antifreeze/m003.png"
+        },
+        {
+          "bar": 4,
+          "url": "/score_crops/antifreeze/m004.png"
+        },
+        {
+          "bar": 5,
+          "url": "/score_crops/antifreeze/m005.png"
+        },
+        {
+          "bar": 6,
+          "url": "/score_crops/antifreeze/m006.png"
+        },
+        {
+          "bar": 7,
+          "url": "/score_crops/antifreeze/m007.png"
+        },
+        {
+          "bar": 8,
+          "url": "/score_crops/antifreeze/m008.png"
+        },
+        {
+          "bar": 9,
+          "url": "/score_crops/antifreeze/m009.png"
+        },
+        {
+          "bar": 10,
+          "url": "/score_crops/antifreeze/m010.png"
+        },
+        {
+          "bar": 11,
+          "url": "/score_crops/antifreeze/m011.png"
+        },
+        {
+          "bar": 12,
+          "url": "/score_crops/antifreeze/m012.png"
+        },
+        {
+          "bar": 13,
+          "url": "/score_crops/antifreeze/m013.png"
+        },
+        {
+          "bar": 14,
+          "url": "/score_crops/antifreeze/m014.png"
+        },
+        {
+          "bar": 15,
+          "url": "/score_crops/antifreeze/m015.png"
+        },
+        {
+          "bar": 16,
+          "url": "/score_crops/antifreeze/m016.png"
+        },
+        {
+          "bar": 17,
+          "url": "/score_crops/antifreeze/m017.png"
+        },
+        {
+          "bar": 18,
+          "url": "/score_crops/antifreeze/m018.png"
+        },
+        {
+          "bar": 19,
+          "url": "/score_crops/antifreeze/m019.png"
+        },
+        {
+          "bar": 20,
+          "url": "/score_crops/antifreeze/m020.png"
+        },
+        {
+          "bar": 21,
+          "url": "/score_crops/antifreeze/m021.png"
+        },
+        {
+          "bar": 22,
+          "url": "/score_crops/antifreeze/m022.png"
+        },
+        {
+          "bar": 23,
+          "url": "/score_crops/antifreeze/m023.png"
+        },
+        {
+          "bar": 24,
+          "url": "/score_crops/antifreeze/m024.png"
+        },
+        {
+          "bar": 25,
+          "url": "/score_crops/antifreeze/m025.png"
+        },
+        {
+          "bar": 26,
+          "url": "/score_crops/antifreeze/m026.png"
+        },
+        {
+          "bar": 27,
+          "url": "/score_crops/antifreeze/m027.png"
+        },
+        {
+          "bar": 28,
+          "url": "/score_crops/antifreeze/m028.png"
+        },
+        {
+          "bar": 29,
+          "url": "/score_crops/antifreeze/m029.png"
+        },
+        {
+          "bar": 30,
+          "url": "/score_crops/antifreeze/m030.png"
+        },
+        {
+          "bar": 31,
+          "url": "/score_crops/antifreeze/m031.png"
+        },
+        {
+          "bar": 32,
+          "url": "/score_crops/antifreeze/m032.png"
+        },
+        {
+          "bar": 33,
+          "url": "/score_crops/antifreeze/m033.png"
+        },
+        {
+          "bar": 34,
+          "url": "/score_crops/antifreeze/m034.png"
+        },
+        {
+          "bar": 35,
+          "url": "/score_crops/antifreeze/m035.png"
+        },
+        {
+          "bar": 36,
+          "url": "/score_crops/antifreeze/m036.png"
+        },
+        {
+          "bar": 37,
+          "url": "/score_crops/antifreeze/m037.png"
+        },
+        {
+          "bar": 38,
+          "url": "/score_crops/antifreeze/m038.png"
+        },
+        {
+          "bar": 39,
+          "url": "/score_crops/antifreeze/m039.png"
+        },
+        {
+          "bar": 40,
+          "url": "/score_crops/antifreeze/m040.png"
+        },
+        {
+          "bar": 41,
+          "url": "/score_crops/antifreeze/m041.png"
+        },
+        {
+          "bar": 42,
+          "url": "/score_crops/antifreeze/m042.png"
+        },
+        {
+          "bar": 43,
+          "url": "/score_crops/antifreeze/m043.png"
+        },
+        {
+          "bar": 44,
+          "url": "/score_crops/antifreeze/m044.png"
+        },
+        {
+          "bar": 45,
+          "url": "/score_crops/antifreeze/m045.png"
+        },
+        {
+          "bar": 46,
+          "url": "/score_crops/antifreeze/m046.png"
+        },
+        {
+          "bar": 47,
+          "url": "/score_crops/antifreeze/m047.png"
+        },
+        {
+          "bar": 48,
+          "url": "/score_crops/antifreeze/m048.png"
+        },
+        {
+          "bar": 49,
+          "url": "/score_crops/antifreeze/m049.png"
+        },
+        {
+          "bar": 50,
+          "url": "/score_crops/antifreeze/m050.png"
+        },
+        {
+          "bar": 51,
+          "url": "/score_crops/antifreeze/m051.png"
+        },
+        {
+          "bar": 52,
+          "url": "/score_crops/antifreeze/m052.png"
+        },
+        {
+          "bar": 53,
+          "url": "/score_crops/antifreeze/m053.png"
+        },
+        {
+          "bar": 54,
+          "url": "/score_crops/antifreeze/m054.png"
+        },
+        {
+          "bar": 55,
+          "url": "/score_crops/antifreeze/m055.png"
+        },
+        {
+          "bar": 56,
+          "url": "/score_crops/antifreeze/m056.png"
+        },
+        {
+          "bar": 57,
+          "url": "/score_crops/antifreeze/m057.png"
+        },
+        {
+          "bar": 58,
+          "url": "/score_crops/antifreeze/m058.png"
+        },
+        {
+          "bar": 59,
+          "url": "/score_crops/antifreeze/m059.png"
+        },
+        {
+          "bar": 60,
+          "url": "/score_crops/antifreeze/m060.png"
+        },
+        {
+          "bar": 61,
+          "url": "/score_crops/antifreeze/m061.png"
+        },
+        {
+          "bar": 62,
+          "url": "/score_crops/antifreeze/m062.png"
+        },
+        {
+          "bar": 63,
+          "url": "/score_crops/antifreeze/m063.png"
+        },
+        {
+          "bar": 64,
+          "url": "/score_crops/antifreeze/m064.png"
+        },
+        {
+          "bar": 65,
+          "url": "/score_crops/antifreeze/m065.png"
+        },
+        {
+          "bar": 66,
+          "url": "/score_crops/antifreeze/m066.png"
+        },
+        {
+          "bar": 67,
+          "url": "/score_crops/antifreeze/m067.png"
+        },
+        {
+          "bar": 68,
+          "url": "/score_crops/antifreeze/m068.png"
+        },
+        {
+          "bar": 69,
+          "url": "/score_crops/antifreeze/m069.png"
+        },
+        {
+          "bar": 70,
+          "url": "/score_crops/antifreeze/m070.png"
+        },
+        {
+          "bar": 71,
+          "url": "/score_crops/antifreeze/m071.png"
+        },
+        {
+          "bar": 72,
+          "url": "/score_crops/antifreeze/m072.png"
+        },
+        {
+          "bar": 73,
+          "url": "/score_crops/antifreeze/m073.png"
+        },
+        {
+          "bar": 74,
+          "url": "/score_crops/antifreeze/m074.png"
+        },
+        {
+          "bar": 75,
+          "url": "/score_crops/antifreeze/m075.png"
+        },
+        {
+          "bar": 76,
+          "url": "/score_crops/antifreeze/m076.png"
+        },
+        {
+          "bar": 77,
+          "url": "/score_crops/antifreeze/m077.png"
+        },
+        {
+          "bar": 78,
+          "url": "/score_crops/antifreeze/m078.png"
+        },
+        {
+          "bar": 79,
+          "url": "/score_crops/antifreeze/m079.png"
+        },
+        {
+          "bar": 80,
+          "url": "/score_crops/antifreeze/m080.png"
+        }
+      ]
+    }
+  ],
+  "upload_available": false,
+  "static": true
+}

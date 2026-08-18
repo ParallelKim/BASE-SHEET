@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "python3 scripts/build_studio_static.py",
+  "outputDirectory": "web",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/data/(.*).mid",
+      "headers": [
+        { "key": "Content-Type", "value": "audio/midi" },
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    },
+    {
+      "source": "/score_crops/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    }
+  ]
+}

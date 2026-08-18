@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BASE-SHEET 스튜디오</title>
+  <link rel="stylesheet" href="studio.css" />
+</head>
+<body>
+  <header>
+    <h1>BASE-SHEET 스튜디오</h1>
+    <div class="tabs">
+      <button type="button" data-tab="view" class="active" id="tab-view">보기</button>
+      <button type="button" data-tab="upload" id="tab-upload">올리기</button>
+    </div>
+  </header>
+  <main>
+    <section id="panel-view" class="panel on">
+      <div class="row">
+        <label class="stack">곡
+          <select id="song"></select>
+        </label>
+        <label class="stack">MIDI
+          <select id="midi-kind">
+            <option value="perf">성능 (.mid)</option>
+            <option value="quant">양자화 (.quant.mid)</option>
+            <option value="both">겹쳐 보기</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <button type="button" id="play" disabled>재생</button>
+        <button type="button" id="stop" disabled>정지</button>
+        <button type="button" id="prev-bar">이전 마디</button>
+        <button type="button" id="next-bar">다음 마디</button>
+      </div>
+      <p id="missing" hidden>이 곡의 MIDI가 아직 없습니다. 서버에서 한 번 전사하거나 올리기 탭을 쓰세요.</p>
+      <div id="score-box">
+        <img id="score" alt="출판 악보 마디" hidden />
+        <p id="score-meta"></p>
+      </div>
+      <div id="roll-wrap"><canvas id="roll"></canvas></div>
+      <p id="meta"></p>
+      <p class="hint"><i class="swatch a"></i>성능 MIDI · <i class="swatch b"></i>양자화. 재생하면 기보 마디 크롭이 따라갑니다.</p>
+      <div id="listen-box" hidden>
+        <label class="stack">미리듣기
+          <select id="listen-kind">
+            <option value="preview">MIDI 톤 (.preview.wav)</option>
+            <option value="compare">비교 (왼쪽=스템, 오른쪽=MIDI)</option>
+          </select>
+        </label>
+        <audio id="listen" controls playsinline></audio>
+      </div>
+    </section>
+    <section id="panel-upload" class="panel">
+      <p id="upload-static" class="hint" hidden>이 주소는 보기 전용입니다. 휴대폰에서 변환하려면 Hugging Face Space(Docker, 무료 CPU)에 올리세요.</p>
+      <div id="upload-live">
+      <p class="hint">새 베이스 스템을 올리면 서버에서 전사합니다. CPU면 꽤 걸릴 수 있습니다. 소스 분리는 하지 않습니다.</p>
+      <div id="drop">여기에 놓거나 아래 버튼으로 고르세요<br />wav · mp3 · m4a · flac · ogg · aiff · 최대 30MB</div>
+      <div class="row">
+        <button type="button" id="upload-btn">음원 고르기</button>
+        <input id="file" type="file" accept="audio/*,.m4a,.wav,.mp3,.flac,.ogg,.aiff" hidden />
+      </div>
+      <div class="row">
+        <label class="stack">BPM (비우면 자동)
+          <input id="bpm" type="number" inputmode="decimal" min="40" max="220" placeholder="84" />
+        </label>
+        <label class="stack">그리드
+          <select id="grid">
+            <option value="8">8</option>
+            <option value="16">16</option>
+            <option value="8t">8t</option>
+            <option value="16t">16t</option>
+          </select>
+        </label>
+        <label class="stack">조 (선택)
+          <input id="key" type="text" placeholder='F# minor' />
+        </label>
+      </div>
+      <p id="upload-status"></p>
+      <div id="jobs"></div>
+      </div>
+    </section>
+    <p id="status"></p>
+  </main>
+  <script src="studio.js"></script>
+</body>
+</html>

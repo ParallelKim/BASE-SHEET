@@ -1,0 +1,28 @@
+# 테스트 픽스처 (팀 공유)
+
+채점·크롭·지침은 저장소에 둔다. 클론하면 악보와 마디 조각을 바로 볼 수 있다.
+
+## 커밋하는 것
+
+| 파일 | 내용 |
+|---|---|
+| `ijji_bass_score.pdf` | 자우림 「있지」 출판 베이스 악보 (akbobada) |
+| `Antifreeze_bass_score.pdf` | Antifreeze 출판 베이스 악보 |
+| `Antifreeze_bass_mixed.m4a` | Antifreeze 베이스 스템 (믹스 잔여 있음) |
+| `있지 - 자우림_bass_mixed.m4a` | 있지 베이스 스템 (믹스 잔여 있음). 식별자는 계속 `ijji` |
+| `score_crops/ijji/m001.png` … `m072.png` | 있지 기보 마디 크롭 |
+| `score_crops/antifreeze/m001.png` … `m080.png` | Antifreeze 기보 마디 크롭 |
+| `score_crops/*/pages/pN.png` | 페이지 전체 |
+| `score_crops/manifest.json` | 크롭 박스 |
+
+차트 표는 `tests/ijji_chart.py`, `tests/antifreeze_chart.py`. 읽는 절차는 [docs/chart-verification.md](../../docs/chart-verification.md). 에이전트는 [AGENTS.md](../../AGENTS.md).
+
+```bash
+python scripts/crop_score_bars.py
+python scripts/report_bar_scores.py   # 스템 vs 차트, out/listen/
+```
+
+## 커밋하지 않는 것
+
+- `ijji_bass.m4a` — 예전 로컬 이름 (`.gitignore`). 없으면 `있지 - 자우림_bass_mixed.m4a`를 쓴다.
+- `idmt-smt-bass/` — IDMT-SMT-Bass는 CC BY-NC-ND라 재배포하지 않는다. `python scripts/fetch_idmt_bass.py`.
