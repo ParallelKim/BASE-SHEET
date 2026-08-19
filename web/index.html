@@ -33,15 +33,27 @@
         <button type="button" id="stop" disabled>정지</button>
         <button type="button" id="prev-bar">이전 마디</button>
         <button type="button" id="next-bar">다음 마디</button>
+        <button type="button" id="skip-rest" hidden>탭 있는 마디로</button>
       </div>
       <p id="missing" hidden>이 곡의 MIDI가 아직 없습니다. 서버에서 한 번 전사하거나 올리기 탭을 쓰세요.</p>
       <div id="score-box">
         <img id="score" alt="출판 악보 마디" hidden />
         <p id="score-meta"></p>
+        <p id="score-hint" class="callout" hidden></p>
       </div>
       <div id="roll-wrap"><canvas id="roll"></canvas></div>
       <p id="meta"></p>
-      <p class="hint"><i class="swatch a"></i>성능 MIDI · <i class="swatch b"></i>양자화. 재생하면 기보 마디 크롭이 따라갑니다.</p>
+      <p class="hint"><i class="swatch a"></i>성능 MIDI · <i class="swatch b"></i>양자화. 재생하면 출판 마디 크롭이 따라갑니다.</p>
+      <details class="review" open>
+        <summary>어떻게 검수하나요</summary>
+        <ol>
+          <li>위 그림은 <strong>출판 그 마디</strong>입니다. 보표가 비어 있으면 베이스가 쉬는 마디입니다.</li>
+          <li>아래 칸은 <strong>스템에서 검출한 MIDI</strong>입니다. 킥·다른 저음이 음표로 붙을 수 있습니다.</li>
+          <li><strong>타셋</strong>은 MIDI가 비어서가 아니라, 출판 탭이 쉼표인 구간 이름입니다. 여기에 피아노롤 음이 있어도 맞출 필요가 없습니다.</li>
+          <li>탭과 맞는지 보려면 「탭 있는 마디로」로 가서 크롭 TAB과 피아노롤을 대조하세요. 있지는 13마디(벌스)부터입니다.</li>
+          <li>스템처럼 들리는지는 헤드폰으로 <strong>비교</strong>(왼쪽=스템, 오른쪽=MIDI)를 듣습니다. 양자화 파일은 악보 정렬용입니다.</li>
+        </ol>
+      </details>
       <div id="listen-box" hidden>
         <label class="stack">미리듣기
           <select id="listen-kind">

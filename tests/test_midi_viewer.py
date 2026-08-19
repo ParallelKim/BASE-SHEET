@@ -22,7 +22,9 @@ def test_midi_viewer_page_exists():
     dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
     assert "7860" in dockerfile
     assert "torchcrepe" in dockerfile
-    assert "serve_midi_viewer.py" in dockerfile
+    assert "어떻게 검수하나요" in page
+    assert "탭 있는 마디로" in page
+    assert "타셋" in page
 
 
 def test_studio_catalog_lists_fixture_songs():
@@ -33,8 +35,9 @@ def test_studio_catalog_lists_fixture_songs():
     ijji = next(s for s in data["songs"] if s["id"] == "ijji")
     assert ijji["n_written"] == 72
     assert ijji["play"][0] == 1
-    assert ijji["midi"]
-    assert ijji["quant"]
+    assert ijji["review_from"] == 12
+    assert "출판 쉼표" in ijji["section_labels"]["tacet"]
+    assert "잔여" in ijji["section_hints"]["tacet"]
     af = next(s for s in data["songs"] if s["id"] == "antifreeze")
     assert len(af["play"]) == 126
     assert af["play"][24] == 9

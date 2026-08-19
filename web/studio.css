@@ -36,6 +36,14 @@ main { padding: 12px 14px; }
   border-radius: 8px; border: 1px solid var(--line);
 }
 #score-meta, #meta, .hint { color: var(--muted); font-size: 13px; }
+.callout {
+  margin: 8px 0 0; padding: 10px 12px; border-radius: 8px;
+  background: #252011; border: 1px solid #5a4a28; color: var(--play); font-size: 13px;
+}
+.review { margin-top: 14px; color: var(--muted); font-size: 13px; }
+.review summary { cursor: pointer; color: var(--text); min-height: 44px; display: flex; align-items: center; }
+.review ol { margin: 8px 0 0; padding-left: 1.2em; }
+.review li { margin: 6px 0; }
 #roll-wrap { position: relative; height: 38vh; min-height: 180px; overflow: auto; background: #0e1015; border-radius: 8px; margin-top: 10px; }
 canvas { display: block; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }

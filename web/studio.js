@@ -115,21 +115,32 @@ function writtenAt(t) {
 }
 
 function showCrop(written) {
-  if (written == null || written === state.written) return;
+  if (written == null) {
+    state.written = null;
+    setScoreHint("");
+    return;
+  }
+  if (written === state.written) {
+    setScoreHint(sectionHint(written));
+    return;
+  }
   state.written = written;
   const item = state.crops.find((c) => c.bar === written);
   const img = $("score");
   const meta = $("score-meta");
+  const sec = sectionName(written);
+  const label = sectionLabel(sec);
   if (!item) {
     img.removeAttribute("src");
     img.hidden = true;
     meta.textContent = state.song && state.song.crop_song ? `기보 ${written}마디 크롭 없음` : "이 곡은 출판 크롭이 없습니다";
+    setScoreHint(sectionHint(written));
     return;
   }
   img.hidden = false;
   img.src = item.url;
-  const sec = sectionName(written);
-  meta.textContent = `기보 ${written}마디` + (sec ? ` · ${sec}` : "");
+  meta.textContent = `기보 ${written}마디` + (label ? ` · ${label}` : "");
+  setScoreHint(sectionHint(written));
 }
 
 function sectionName(written) {
@@ -141,6 +152,36 @@ function sectionName(written) {
     if (played >= range[0] && played < range[1]) return name;
   }
   return "";
+}
+
+function sectionLabel(name) {
+  if (!name) return "";
+  const labels = (state.song && state.song.section_labels) || {};
+  return labels[name] || name;
+}
+
+function sectionHint(written) {
+  const name = sectionName(written);
+  const hints = (state.song && state.song.section_hints) || {};
+  return (name && hints[name]) || "";
+}
+
+function setScoreHint(text) {
+  const el = $("score-hint");
+  if (!el) return;
+  el.hidden = !text;
+  el.textContent = text || "";
+}
+
+function skipToReview() {
+  const song = state.song;
+  if (!song || !song.play || !song.play.length) return;
+  const j = Math.max(0, Math.min(song.play.length - 1, song.review_from || 0));
+  const barS = 240 / song.bpm;
+  state.playhead = (song.t0 || 0) + j * barS + 0.05;
+  state.written = null;
+  showCrop(song.play[j]);
+  draw(state.playhead);
 }
 
 function draw(playhead) {
@@ -339,6 +380,8 @@ async function selectSong(id) {
   state.written = null;
   $("missing").hidden = !!(song && song.midi);
   $("score-box").hidden = !(song && song.crop_song);
+  const skip = $("skip-rest");
+  if (skip) skip.hidden = !(song && song.review_from);
   if (!song) return;
   await loadCrops(song);
   applyListenSource();
@@ -458,6 +501,8 @@ function bind() {
   $("stop").onclick = stop;
   $("prev-bar").onclick = () => nudgeBar(-1);
   $("next-bar").onclick = () => nudgeBar(1);
+  const skip = $("skip-rest");
+  if (skip) skip.onclick = skipToReview;
   $("file").onchange = (e) => e.target.files[0] && submitUpload(e.target.files[0]);
   const drop = $("drop");
   drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("hot"); });
