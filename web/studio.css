@@ -35,7 +35,9 @@ main { padding: 12px 14px; }
   width: 100%; max-height: 42vh; object-fit: contain; background: #fff;
   border-radius: 8px; border: 1px solid var(--line);
 }
-#score-meta, #meta, .hint { color: var(--muted); font-size: 13px; }
+#score-meta, #meta, #sync-meta, .hint, .pane-label { color: var(--muted); font-size: 13px; }
+.pane-label { margin: 12px 0 6px; color: var(--text); font-weight: 600; }
+#sync-meta { margin: 0 0 6px; font-variant-numeric: tabular-nums; }
 .callout {
   margin: 8px 0 0; padding: 10px 12px; border-radius: 8px;
   background: #252011; border: 1px solid #5a4a28; color: var(--play); font-size: 13px;

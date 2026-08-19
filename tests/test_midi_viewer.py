@@ -25,6 +25,10 @@ def test_midi_viewer_page_exists():
     assert "어떻게 검수하나요" in page
     assert "탭 있는 마디로" in page
     assert "타셋" in page
+    assert "전곡 MIDI" in page
+    assert "sync-meta" in page
+    assert "노란 띠" in (root / "web" / "studio.js").read_text(encoding="utf-8")
+    assert "scrollPlayheadIntoView" in (root / "web" / "studio.js").read_text(encoding="utf-8")
 
 
 def test_studio_catalog_lists_fixture_songs():

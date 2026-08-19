@@ -104,14 +104,54 @@ function allNotes() {
   return out;
 }
 
-function writtenAt(t) {
+function barSeconds() {
   const song = state.song;
-  if (!song || !song.play || !song.play.length || !song.bpm) return null;
-  const barS = 240 / song.bpm;
+  const bpm = (song && song.bpm) || (state.tracks[0] && state.tracks[0].bpm);
+  return bpm ? 240 / bpm : null;
+}
+
+function playedIndexAt(t) {
+  const song = state.song;
+  const barS = barSeconds();
+  if (!song || !song.play || !song.play.length || !barS) return null;
   let idx = Math.floor(Math.max(0, t - (song.t0 || 0)) / barS);
   if (idx < 0) idx = 0;
   if (idx >= song.play.length) idx = song.play.length - 1;
+  return idx;
+}
+
+function writtenAt(t) {
+  const song = state.song;
+  const idx = playedIndexAt(t);
+  if (idx == null || !song) return null;
   return song.play[idx];
+}
+
+function barWindow(t) {
+  const song = state.song;
+  const barS = barSeconds();
+  const idx = playedIndexAt(t);
+  if (idx == null || !song || !barS) return null;
+  const start = (song.t0 || 0) + idx * barS;
+  return { idx, written: song.play[idx], start, end: start + barS, barS };
+}
+
+function updateSyncMeta(t) {
+  const el = $("sync-meta");
+  if (!el) return;
+  const win = barWindow(t == null ? 0 : t);
+  const dur = Math.max(0, ...state.tracks.filter(Boolean).map((tr) => tr.duration));
+  if (!win) {
+    el.textContent = dur ? `전곡 ${dur.toFixed(0)}초 · 재생 ${(t || 0).toFixed(1)}초` : "";
+    return;
+  }
+  const label = sectionLabel(sectionName(win.written));
+  el.textContent =
+    `재생 ${(t || 0).toFixed(1)}초 / ${dur.toFixed(0)}초`
+    + ` · 연주 ${win.idx + 1}/${state.song.play.length}마디`
+    + ` · 출판 ${win.written}마디`
+    + (label ? ` (${label})` : "")
+    + ` · 노란 띠 = 위 크롭과 같은 구간`;
 }
 
 function showCrop(written) {
@@ -133,13 +173,13 @@ function showCrop(written) {
   if (!item) {
     img.removeAttribute("src");
     img.hidden = true;
-    meta.textContent = state.song && state.song.crop_song ? `기보 ${written}마디 크롭 없음` : "이 곡은 출판 크롭이 없습니다";
+    meta.textContent = state.song && state.song.crop_song ? `출판 ${written}마디 크롭 없음` : "이 곡은 출판 크롭이 없습니다";
     setScoreHint(sectionHint(written));
     return;
   }
   img.hidden = false;
   img.src = item.url;
-  meta.textContent = `기보 ${written}마디` + (label ? ` · ${label}` : "");
+  meta.textContent = `출판 ${written}마디` + (label ? ` · ${label}` : "") + " · 아래 노란 띠와 같은 시간";
   setScoreHint(sectionHint(written));
 }
 
@@ -177,11 +217,34 @@ function skipToReview() {
   const song = state.song;
   if (!song || !song.play || !song.play.length) return;
   const j = Math.max(0, Math.min(song.play.length - 1, song.review_from || 0));
-  const barS = 240 / song.bpm;
+  const barS = barSeconds();
+  if (!barS) return;
   state.playhead = (song.t0 || 0) + j * barS + 0.05;
   state.written = null;
-  showCrop(song.play[j]);
   draw(state.playhead);
+}
+
+function nudgeBar(delta) {
+  const song = state.song;
+  const barS = barSeconds();
+  if (!song || !song.play.length || !barS) return;
+  let w = state.written || song.play[0];
+  const i = song.play.indexOf(w);
+  const j = Math.max(0, Math.min(song.play.length - 1, (i < 0 ? 0 : i) + delta));
+  state.playhead = (song.t0 || 0) + j * barS + 0.05;
+  state.written = null;
+  draw(state.playhead);
+}
+
+function scrollPlayheadIntoView(x) {
+  const wrap = $("roll-wrap");
+  if (!wrap) return;
+  const pad = wrap.clientWidth * 0.35;
+  const left = wrap.scrollLeft;
+  const right = left + wrap.clientWidth;
+  if (x < left + 40 || x > right - 40) {
+    wrap.scrollLeft = Math.max(0, x - pad);
+  }
 }
 
 function draw(playhead) {
@@ -189,7 +252,8 @@ function draw(playhead) {
   const canvas = $("roll");
   const wrap = $("roll-wrap");
   if (!canvas || !wrap) return;
-  const dur = Math.max(1, ...state.tracks.filter(Boolean).map((t) => t.duration), playhead || 0);
+  const t = playhead == null ? 0 : playhead;
+  const dur = Math.max(1, ...state.tracks.filter(Boolean).map((tr) => tr.duration), t);
   let lo = 28, hi = 52;
   for (const n of notes) { lo = Math.min(lo, n.pitch); hi = Math.max(hi, n.pitch); }
   lo = Math.max(21, lo - 1); hi = Math.min(72, hi + 1);
@@ -213,32 +277,43 @@ function draw(playhead) {
     g.fillText(midiName(p), 6, y + 12);
   }
   const bpm = (state.song && state.song.bpm) || (state.tracks[0] && state.tracks[0].bpm);
-  if (bpm) {
-    const bar = 240 / bpm;
+  const barS = bpm ? 240 / bpm : null;
+  if (barS) {
     g.strokeStyle = "#2a3142";
-    for (let t = 0; t < dur + bar; t += bar / 4) {
-      const x = left + t * px;
-      g.globalAlpha = Math.abs(t / bar - Math.round(t / bar)) < 1e-3 ? 0.55 : 0.22;
+    for (let tt = 0; tt < dur + barS; tt += barS / 4) {
+      const x = left + tt * px;
+      g.globalAlpha = Math.abs(tt / barS - Math.round(tt / barS)) < 1e-3 ? 0.55 : 0.22;
       g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
     }
     g.globalAlpha = 1;
+  }
+  const win = barWindow(t);
+  if (win) {
+    const x0 = left + win.start * px;
+    const bw = Math.max(2, win.barS * px);
+    g.fillStyle = "rgba(243, 211, 154, 0.12)";
+    g.fillRect(x0, 0, bw, H);
+    g.fillStyle = "#f3d39a";
+    g.font = "11px ui-sans-serif";
+    g.fillText("출판 " + win.written, x0 + 4, 14);
   }
   for (const n of notes) {
     const x = left + n.start * px;
     const w = Math.max(3, (n.end - n.start) * px - 1);
     const y = (hi - n.pitch) * rowH + 2;
+    const inBar = win && n.start >= win.start && n.start < win.end;
     g.fillStyle = n.track ? "#6aa6c9" : "#e2a15a";
-    g.globalAlpha = 0.35 + (n.vel / 127) * 0.65;
+    g.globalAlpha = inBar ? 0.55 + (n.vel / 127) * 0.45 : 0.22 + (n.vel / 127) * 0.35;
     g.fillRect(x, y, w, rowH - 4);
     g.globalAlpha = 1;
   }
-  if (playhead != null) {
-    const x = left + playhead * px;
-    g.strokeStyle = "#f3d39a"; g.lineWidth = 1.5;
-    g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-    g.lineWidth = 1;
-    showCrop(writtenAt(playhead));
-  }
+  const x = left + t * px;
+  g.strokeStyle = "#f3d39a"; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
+  g.lineWidth = 1;
+  showCrop(writtenAt(t));
+  updateSyncMeta(t);
+  scrollPlayheadIntoView(x);
 }
 
 function ensureCtx() {
@@ -549,18 +624,6 @@ function applyListenSource() {
   }
   const url = (kind && kind.value === "compare" && compare) || preview || compare;
   if (url && audio.getAttribute("src") !== url) audio.src = url;
-}
-
-function nudgeBar(delta) {
-  const song = state.song;
-  if (!song || !song.play.length) return;
-  let w = state.written || song.play[0];
-  const i = song.play.indexOf(w);
-  const j = Math.max(0, Math.min(song.play.length - 1, (i < 0 ? 0 : i) + delta));
-  const barS = 240 / song.bpm;
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  showCrop(song.play[j]);
-  draw(state.playhead);
 }
 
 bind();
