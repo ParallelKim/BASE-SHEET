@@ -9,7 +9,7 @@ def test_midi_viewer_page_exists():
     page = (root / "web" / "index.html").read_text(encoding="utf-8")
     assert "parseMidi" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert 'id="roll"' in page
-    assert 'id="score"' in page
+    assert 'id="score-strip"' in page
     assert 'data-tab="upload"' in page
     assert (root / "web" / "studio.css").is_file()
     assert (root / "scripts" / "serve_midi_viewer.py").is_file()
@@ -27,7 +27,8 @@ def test_midi_viewer_page_exists():
     assert "타셋" in page
     assert "전곡 MIDI" in page
     assert "sync-meta" in page
-    assert "노란 띠" in (root / "web" / "studio.js").read_text(encoding="utf-8")
+    assert "score-strip" in page
+    assert "STRIP_RADIUS" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert "scrollPlayheadIntoView" in (root / "web" / "studio.js").read_text(encoding="utf-8")
 
 

@@ -136,6 +136,8 @@ function barWindow(t) {
   return { idx, written: song.play[idx], start, end: start + barS, barS };
 }
 
+const STRIP_RADIUS = 4;
+
 function updateSyncMeta(t) {
   const el = $("sync-meta");
   if (!el) return;
@@ -145,49 +147,108 @@ function updateSyncMeta(t) {
     el.textContent = dur ? `전곡 ${dur.toFixed(0)}초 · 재생 ${(t || 0).toFixed(1)}초` : "";
     return;
   }
-  const label = sectionLabel(sectionName(win.written));
+  const label = sectionLabel(sectionNameAt(win.idx));
   el.textContent =
     `재생 ${(t || 0).toFixed(1)}초 / ${dur.toFixed(0)}초`
     + ` · 연주 ${win.idx + 1}/${state.song.play.length}마디`
     + ` · 출판 ${win.written}마디`
     + (label ? ` (${label})` : "")
-    + ` · 노란 띠 = 위 크롭과 같은 구간`;
+    + ` · 노란 띠 = 위 가운데 마디`;
+}
+
+function jumpToPlayedIndex(idx) {
+  const song = state.song;
+  const barS = barSeconds();
+  if (!song || !song.play.length || !barS) return;
+  const j = Math.max(0, Math.min(song.play.length - 1, idx));
+  state.playhead = (song.t0 || 0) + j * barS + 0.05;
+  state.written = null;
+  draw(state.playhead);
 }
 
 function showCrop(written) {
+  const strip = $("score-strip");
+  const meta = $("score-meta");
+  if (!strip) return;
   if (written == null) {
     state.written = null;
+    strip.hidden = true;
+    strip.innerHTML = "";
+    setScoreHint("");
+    if (meta) meta.textContent = "";
+    return;
+  }
+  const song = state.song;
+  let idx = playedIndexAt(state.playhead || 0);
+  if (idx == null || !song || song.play[idx] !== written) {
+    idx = song && song.play ? song.play.indexOf(written) : -1;
+  }
+  const sameCenter = written === state.written && strip.dataset.center === String(idx);
+  state.written = written;
+  const sec = sectionNameAt(idx);
+  const label = sectionLabel(sec);
+  if (!song || !song.play || !song.play.length || idx < 0) {
+    strip.hidden = true;
+    if (meta) meta.textContent = "이 곡은 출판 크롭이 없습니다";
     setScoreHint("");
     return;
   }
-  if (written === state.written) {
-    setScoreHint(sectionHint(written));
-    return;
+  const from = Math.max(0, idx - STRIP_RADIUS);
+  const to = Math.min(song.play.length - 1, idx + STRIP_RADIUS);
+  const wanted = [];
+  for (let i = from; i <= to; i++) wanted.push({ played: i, written: song.play[i] });
+  const sig = wanted.map((w) => `${w.played}:${w.written}`).join(",") + "@" + idx;
+  if (!sameCenter || strip.dataset.sig !== sig) {
+    strip.dataset.sig = sig;
+    strip.dataset.center = String(idx);
+    strip.hidden = false;
+    strip.innerHTML = "";
+    for (const cell of wanted) {
+      const item = state.crops.find((c) => c.bar === cell.written);
+      const fig = document.createElement("button");
+      fig.type = "button";
+      fig.className = "score-cell" + (cell.played === idx ? " on" : "") + (item ? "" : " missing");
+      fig.dataset.played = String(cell.played);
+      const lab = sectionLabel(sectionNameAt(cell.played));
+      const cap = `출판 ${cell.written}` + (lab ? ` · ${lab}` : "");
+      if (item) {
+        fig.innerHTML = `<img alt="${cap}" loading="lazy" /><span class="cap">${cap}</span>`;
+        fig.querySelector("img").src = item.url;
+      } else {
+        fig.innerHTML = `<span class="cap">${cap}<br />크롭 없음</span>`;
+      }
+      fig.onclick = () => jumpToPlayedIndex(cell.played);
+      strip.appendChild(fig);
+    }
+  } else {
+    strip.querySelectorAll(".score-cell").forEach((el) => {
+      el.classList.toggle("on", Number(el.dataset.played) === idx);
+    });
   }
-  state.written = written;
-  const item = state.crops.find((c) => c.bar === written);
-  const img = $("score");
-  const meta = $("score-meta");
-  const sec = sectionName(written);
-  const label = sectionLabel(sec);
-  if (!item) {
-    img.removeAttribute("src");
-    img.hidden = true;
-    meta.textContent = state.song && state.song.crop_song ? `출판 ${written}마디 크롭 없음` : "이 곡은 출판 크롭이 없습니다";
-    setScoreHint(sectionHint(written));
-    return;
+  if (meta) {
+    meta.textContent =
+      `가운데 = 출판 ${written}마디`
+      + (label ? ` · ${label}` : "")
+      + ` · 연주 ${idx + 1}/${song.play.length}`
+      + ` · 좌우로 밀거나 칸을 눌러 이동`;
   }
-  img.hidden = false;
-  img.src = item.url;
-  meta.textContent = `출판 ${written}마디` + (label ? ` · ${label}` : "") + " · 아래 노란 띠와 같은 시간";
-  setScoreHint(sectionHint(written));
+  setScoreHint(sectionHintAt(idx));
+  requestAnimationFrame(() => {
+    const on = strip.querySelector(".score-cell.on");
+    if (on) on.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  });
 }
 
 function sectionName(written) {
   const song = state.song;
   if (!song || !song.play) return "";
   const played = song.play.indexOf(written);
-  if (played < 0) return "";
+  return sectionNameAt(played);
+}
+
+function sectionNameAt(played) {
+  const song = state.song;
+  if (!song || played == null || played < 0) return "";
   for (const [name, range] of Object.entries(song.sections || {})) {
     if (played >= range[0] && played < range[1]) return name;
   }
@@ -201,9 +262,21 @@ function sectionLabel(name) {
 }
 
 function sectionHint(written) {
-  const name = sectionName(written);
+  return sectionHintAt(songPlayIndex(written));
+}
+
+function sectionHintAt(played) {
+  const name = sectionNameAt(played);
   const hints = (state.song && state.song.section_hints) || {};
   return (name && hints[name]) || "";
+}
+
+function songPlayIndex(written) {
+  const song = state.song;
+  if (!song || !song.play) return -1;
+  const fromHead = playedIndexAt(state.playhead || 0);
+  if (fromHead != null && song.play[fromHead] === written) return fromHead;
+  return song.play.indexOf(written);
 }
 
 function setScoreHint(text) {
