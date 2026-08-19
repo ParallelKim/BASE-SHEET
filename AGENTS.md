@@ -8,7 +8,7 @@
 
 출판 탭으로 채점 진리를 만들거나 고칠 때는 **[docs/chart-verification.md](docs/chart-verification.md)** 를 따른다.
 
-요약: 기보 마디 하나 = `BarSpec` 하나. 크롭(`tests/fixtures/score_crops/`)으로 읽고, 못 읽으면 `skip`. 추측 근음은 채점하지 않는다. 이미 잠근 차트도 인쇄 번호가 보이는 크롭으로 다시 본다. 진리 파일은 차트를 펼치기만 한다.
+요약: 기보 마디 하나 = `BarSpec` 하나. 크롭(`tests/fixtures/score_crops/`)으로 읽고, 못 읽으면 `skip`. 추측 근음은 채점하지 않는다. 이미 잠근 차트도 인쇄 번호가 보이는 크롭으로 다시 본다. 진리 파일은 차트를 펼치기만 한다. MIDI 검수는 [docs/studio-review.md](docs/studio-review.md).
 
 ## 파이프라인
 
