@@ -38,12 +38,11 @@ main { padding: 12px 14px; }
 .score-strip {
   display: flex; gap: 0; overflow-x: auto; overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x proximity;
   background: #0e1015; border: 1px solid var(--line); border-radius: 8px;
   padding: 8px; min-height: 140px;
 }
 .score-cell {
-  flex: 0 0 auto; width: min(72vw, 280px); scroll-snap-align: center;
+  flex: 0 0 auto; width: min(72vw, 280px);
   background: #fff; border: 2px solid transparent; border-radius: 6px;
   padding: 4px 4px 6px; cursor: pointer; opacity: 0.72;
 }

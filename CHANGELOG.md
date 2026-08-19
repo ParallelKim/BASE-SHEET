@@ -4,7 +4,7 @@
 
 웹 스튜디오: 픽스처 MIDI·출판 크롭 대조, 새 스템 업로드 후 전사 (`python scripts/serve_midi_viewer.py`).
 
-스튜디오 검수: 출판 마디를 연주 순서로 이어 보여 줌. 피아노롤=전곡. 타셋=출판 쉼표. [docs/studio-review.md](docs/studio-review.md).
+스튜디오 검수: 출판 마디 줄이 재생과 함께 스크롤. 피아노롤=전곡. 타셋=출판 쉼표. [docs/studio-review.md](docs/studio-review.md).
 
 ## 0.2.0 — 차트·PLAY·믹스 스템 채점
 

@@ -28,6 +28,7 @@ def test_midi_viewer_page_exists():
     assert "전곡 MIDI" in page
     assert "sync-meta" in page
     assert "score-strip" in page
+    assert "syncStripScroll" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert "STRIP_RADIUS" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert "scrollPlayheadIntoView" in (root / "web" / "studio.js").read_text(encoding="utf-8")
 
