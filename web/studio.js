@@ -104,43 +104,242 @@ function allNotes() {
   return out;
 }
 
-function writtenAt(t) {
+function barSeconds() {
   const song = state.song;
-  if (!song || !song.play || !song.play.length || !song.bpm) return null;
-  const barS = 240 / song.bpm;
+  const bpm = (song && song.bpm) || (state.tracks[0] && state.tracks[0].bpm);
+  return bpm ? 240 / bpm : null;
+}
+
+function playedIndexAt(t) {
+  const song = state.song;
+  const barS = barSeconds();
+  if (!song || !song.play || !song.play.length || !barS) return null;
   let idx = Math.floor(Math.max(0, t - (song.t0 || 0)) / barS);
   if (idx < 0) idx = 0;
   if (idx >= song.play.length) idx = song.play.length - 1;
+  return idx;
+}
+
+function writtenAt(t) {
+  const song = state.song;
+  const idx = playedIndexAt(t);
+  if (idx == null || !song) return null;
   return song.play[idx];
 }
 
-function showCrop(written) {
-  if (written == null || written === state.written) return;
-  state.written = written;
-  const item = state.crops.find((c) => c.bar === written);
-  const img = $("score");
-  const meta = $("score-meta");
-  if (!item) {
-    img.removeAttribute("src");
-    img.hidden = true;
-    meta.textContent = state.song && state.song.crop_song ? `기보 ${written}마디 크롭 없음` : "이 곡은 출판 크롭이 없습니다";
+function barWindow(t) {
+  const song = state.song;
+  const barS = barSeconds();
+  const idx = playedIndexAt(t);
+  if (idx == null || !song || !barS) return null;
+  const start = (song.t0 || 0) + idx * barS;
+  return { idx, written: song.play[idx], start, end: start + barS, barS };
+}
+
+const STRIP_RADIUS = 5;
+
+function updateSyncMeta(t) {
+  const el = $("sync-meta");
+  if (!el) return;
+  const win = barWindow(t == null ? 0 : t);
+  const dur = Math.max(0, ...state.tracks.filter(Boolean).map((tr) => tr.duration));
+  if (!win) {
+    el.textContent = dur ? `전곡 ${dur.toFixed(0)}초 · 재생 ${(t || 0).toFixed(1)}초` : "";
     return;
   }
-  img.hidden = false;
-  img.src = item.url;
-  const sec = sectionName(written);
-  meta.textContent = `기보 ${written}마디` + (sec ? ` · ${sec}` : "");
+  const label = sectionLabel(sectionNameAt(win.idx));
+  el.textContent =
+    `재생 ${(t || 0).toFixed(1)}초 / ${dur.toFixed(0)}초`
+    + ` · 연주 ${win.idx + 1}/${state.song.play.length}마디`
+    + ` · 출판 ${win.written}마디`
+    + (label ? ` (${label})` : "")
+    + ` · 재생 중 위 줄이 같이 이동`;
+}
+
+function jumpToPlayedIndex(idx) {
+  const song = state.song;
+  const barS = barSeconds();
+  if (!song || !song.play.length || !barS) return;
+  const j = Math.max(0, Math.min(song.play.length - 1, idx));
+  state.playhead = (song.t0 || 0) + j * barS + 0.05;
+  state.written = null;
+  draw(state.playhead);
+}
+
+function ensureScoreStrip(idx) {
+  const strip = $("score-strip");
+  const song = state.song;
+  if (!strip || !song || !song.play || idx == null || idx < 0) return null;
+  const from = Math.max(0, idx - STRIP_RADIUS);
+  const to = Math.min(song.play.length - 1, idx + STRIP_RADIUS);
+  if (strip.dataset.from === String(from) && strip.dataset.to === String(to) && strip.childElementCount) {
+    return strip;
+  }
+  strip.dataset.from = String(from);
+  strip.dataset.to = String(to);
+  strip.hidden = false;
+  strip.innerHTML = "";
+  for (let i = from; i <= to; i++) {
+    const written = song.play[i];
+    const item = state.crops.find((c) => c.bar === written);
+    const fig = document.createElement("button");
+    fig.type = "button";
+    fig.className = "score-cell" + (item ? "" : " missing");
+    fig.dataset.played = String(i);
+    const lab = sectionLabel(sectionNameAt(i));
+    const cap = `출판 ${written}` + (lab ? ` · ${lab}` : "");
+    if (item) {
+      fig.innerHTML = `<img alt="${cap}" loading="lazy" /><span class="cap">${cap}</span>`;
+      fig.querySelector("img").src = item.url;
+    } else {
+      fig.innerHTML = `<span class="cap">${cap}<br />크롭 없음</span>`;
+    }
+    fig.onclick = () => jumpToPlayedIndex(i);
+    strip.appendChild(fig);
+  }
+  return strip;
+}
+
+function syncStripScroll(t) {
+  const strip = $("score-strip");
+  const win = barWindow(t);
+  if (!strip || !win) return;
+  ensureScoreStrip(win.idx);
+  if (strip.hidden) return;
+  const cells = [...strip.querySelectorAll(".score-cell")];
+  if (!cells.length) return;
+  const cur = cells.find((c) => Number(c.dataset.played) === win.idx);
+  if (!cur) return;
+  cells.forEach((c) => c.classList.toggle("on", Number(c.dataset.played) === win.idx));
+  const next = cells.find((c) => Number(c.dataset.played) === win.idx + 1);
+  const frac = Math.min(1, Math.max(0, (t - win.start) / win.barS));
+  const x0 = cur.offsetLeft + cur.offsetWidth / 2;
+  const x1 = next ? next.offsetLeft + next.offsetWidth / 2 : x0 + cur.offsetWidth;
+  strip.scrollLeft = Math.max(0, x0 + (x1 - x0) * frac - strip.clientWidth / 2);
+}
+
+function showCrop(written) {
+  const strip = $("score-strip");
+  const meta = $("score-meta");
+  if (!strip) return;
+  if (written == null) {
+    state.written = null;
+    strip.hidden = true;
+    strip.innerHTML = "";
+    strip.dataset.from = "";
+    strip.dataset.to = "";
+    setScoreHint("");
+    if (meta) meta.textContent = "";
+    return;
+  }
+  const song = state.song;
+  let idx = playedIndexAt(state.playhead || 0);
+  if (idx == null || !song || song.play[idx] !== written) {
+    idx = song && song.play ? song.play.indexOf(written) : -1;
+  }
+  state.written = written;
+  const label = sectionLabel(sectionNameAt(idx));
+  if (!song || !song.play || !song.play.length || idx < 0) {
+    strip.hidden = true;
+    if (meta) meta.textContent = "이 곡은 출판 크롭이 없습니다";
+    setScoreHint("");
+    return;
+  }
+  ensureScoreStrip(idx);
+  syncStripScroll(state.playhead || 0);
+  if (meta) {
+    meta.textContent =
+      `가운데 = 출판 ${written}마디`
+      + (label ? ` · ${label}` : "")
+      + ` · 연주 ${idx + 1}/${song.play.length}`
+      + ` · 재생하면 줄이 따라 움직임`;
+  }
+  setScoreHint(sectionHintAt(idx));
 }
 
 function sectionName(written) {
   const song = state.song;
   if (!song || !song.play) return "";
   const played = song.play.indexOf(written);
-  if (played < 0) return "";
+  return sectionNameAt(played);
+}
+
+function sectionNameAt(played) {
+  const song = state.song;
+  if (!song || played == null || played < 0) return "";
   for (const [name, range] of Object.entries(song.sections || {})) {
     if (played >= range[0] && played < range[1]) return name;
   }
   return "";
+}
+
+function sectionLabel(name) {
+  if (!name) return "";
+  const labels = (state.song && state.song.section_labels) || {};
+  return labels[name] || name;
+}
+
+function sectionHint(written) {
+  return sectionHintAt(songPlayIndex(written));
+}
+
+function sectionHintAt(played) {
+  const name = sectionNameAt(played);
+  const hints = (state.song && state.song.section_hints) || {};
+  return (name && hints[name]) || "";
+}
+
+function songPlayIndex(written) {
+  const song = state.song;
+  if (!song || !song.play) return -1;
+  const fromHead = playedIndexAt(state.playhead || 0);
+  if (fromHead != null && song.play[fromHead] === written) return fromHead;
+  return song.play.indexOf(written);
+}
+
+function setScoreHint(text) {
+  const el = $("score-hint");
+  if (!el) return;
+  el.hidden = !text;
+  el.textContent = text || "";
+}
+
+function skipToReview() {
+  const song = state.song;
+  if (!song || !song.play || !song.play.length) return;
+  const j = Math.max(0, Math.min(song.play.length - 1, song.review_from || 0));
+  const barS = barSeconds();
+  if (!barS) return;
+  state.playhead = (song.t0 || 0) + j * barS + 0.05;
+  state.written = null;
+  draw(state.playhead);
+}
+
+function nudgeBar(delta) {
+  const song = state.song;
+  const barS = barSeconds();
+  if (!song || !song.play.length || !barS) return;
+  let w = state.written || song.play[0];
+  const i = song.play.indexOf(w);
+  const j = Math.max(0, Math.min(song.play.length - 1, (i < 0 ? 0 : i) + delta));
+  state.playhead = (song.t0 || 0) + j * barS + 0.05;
+  state.written = null;
+  draw(state.playhead);
+}
+
+function scrollPlayheadIntoView(x) {
+  const wrap = $("roll-wrap");
+  if (!wrap) return;
+  if (state.playing) {
+    wrap.scrollLeft = Math.max(0, x - wrap.clientWidth * 0.35);
+    return;
+  }
+  const pad = wrap.clientWidth * 0.35;
+  const left = wrap.scrollLeft;
+  const right = left + wrap.clientWidth;
+  if (x < left + 40 || x > right - 40) {
+    wrap.scrollLeft = Math.max(0, x - pad);
+  }
 }
 
 function draw(playhead) {
@@ -148,7 +347,8 @@ function draw(playhead) {
   const canvas = $("roll");
   const wrap = $("roll-wrap");
   if (!canvas || !wrap) return;
-  const dur = Math.max(1, ...state.tracks.filter(Boolean).map((t) => t.duration), playhead || 0);
+  const t = playhead == null ? 0 : playhead;
+  const dur = Math.max(1, ...state.tracks.filter(Boolean).map((tr) => tr.duration), t);
   let lo = 28, hi = 52;
   for (const n of notes) { lo = Math.min(lo, n.pitch); hi = Math.max(hi, n.pitch); }
   lo = Math.max(21, lo - 1); hi = Math.min(72, hi + 1);
@@ -172,32 +372,43 @@ function draw(playhead) {
     g.fillText(midiName(p), 6, y + 12);
   }
   const bpm = (state.song && state.song.bpm) || (state.tracks[0] && state.tracks[0].bpm);
-  if (bpm) {
-    const bar = 240 / bpm;
+  const barS = bpm ? 240 / bpm : null;
+  if (barS) {
     g.strokeStyle = "#2a3142";
-    for (let t = 0; t < dur + bar; t += bar / 4) {
-      const x = left + t * px;
-      g.globalAlpha = Math.abs(t / bar - Math.round(t / bar)) < 1e-3 ? 0.55 : 0.22;
+    for (let tt = 0; tt < dur + barS; tt += barS / 4) {
+      const x = left + tt * px;
+      g.globalAlpha = Math.abs(tt / barS - Math.round(tt / barS)) < 1e-3 ? 0.55 : 0.22;
       g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
     }
     g.globalAlpha = 1;
+  }
+  const win = barWindow(t);
+  if (win) {
+    const x0 = left + win.start * px;
+    const bw = Math.max(2, win.barS * px);
+    g.fillStyle = "rgba(243, 211, 154, 0.12)";
+    g.fillRect(x0, 0, bw, H);
+    g.fillStyle = "#f3d39a";
+    g.font = "11px ui-sans-serif";
+    g.fillText("출판 " + win.written, x0 + 4, 14);
   }
   for (const n of notes) {
     const x = left + n.start * px;
     const w = Math.max(3, (n.end - n.start) * px - 1);
     const y = (hi - n.pitch) * rowH + 2;
+    const inBar = win && n.start >= win.start && n.start < win.end;
     g.fillStyle = n.track ? "#6aa6c9" : "#e2a15a";
-    g.globalAlpha = 0.35 + (n.vel / 127) * 0.65;
+    g.globalAlpha = inBar ? 0.55 + (n.vel / 127) * 0.45 : 0.22 + (n.vel / 127) * 0.35;
     g.fillRect(x, y, w, rowH - 4);
     g.globalAlpha = 1;
   }
-  if (playhead != null) {
-    const x = left + playhead * px;
-    g.strokeStyle = "#f3d39a"; g.lineWidth = 1.5;
-    g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-    g.lineWidth = 1;
-    showCrop(writtenAt(playhead));
-  }
+  const x = left + t * px;
+  g.strokeStyle = "#f3d39a"; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
+  g.lineWidth = 1;
+  showCrop(writtenAt(t));
+  updateSyncMeta(t);
+  scrollPlayheadIntoView(x);
 }
 
 function ensureCtx() {
@@ -339,6 +550,8 @@ async function selectSong(id) {
   state.written = null;
   $("missing").hidden = !!(song && song.midi);
   $("score-box").hidden = !(song && song.crop_song);
+  const skip = $("skip-rest");
+  if (skip) skip.hidden = !(song && song.review_from);
   if (!song) return;
   await loadCrops(song);
   applyListenSource();
@@ -458,6 +671,8 @@ function bind() {
   $("stop").onclick = stop;
   $("prev-bar").onclick = () => nudgeBar(-1);
   $("next-bar").onclick = () => nudgeBar(1);
+  const skip = $("skip-rest");
+  if (skip) skip.onclick = skipToReview;
   $("file").onchange = (e) => e.target.files[0] && submitUpload(e.target.files[0]);
   const drop = $("drop");
   drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("hot"); });
@@ -504,18 +719,6 @@ function applyListenSource() {
   }
   const url = (kind && kind.value === "compare" && compare) || preview || compare;
   if (url && audio.getAttribute("src") !== url) audio.src = url;
-}
-
-function nudgeBar(delta) {
-  const song = state.song;
-  if (!song || !song.play.length) return;
-  let w = state.written || song.play[0];
-  const i = song.play.indexOf(w);
-  const j = Math.max(0, Math.min(song.play.length - 1, (i < 0 ? 0 : i) + delta));
-  const barS = 240 / song.bpm;
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  showCrop(song.play[j]);
-  draw(state.playhead);
 }
 
 bind();

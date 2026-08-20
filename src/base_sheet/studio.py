@@ -136,6 +136,34 @@ def _audio_ijji() -> Path | None:
     return fixture_path()
 
 
+SECTION_LABELS = {
+    "tacet": "타셋 (출판 쉼표)",
+    "verse": "벌스",
+    "chorus": "코러스",
+    "inst": "간주",
+    "drive": "드라이브",
+    "coda_a": "코다 앞",
+    "coda_b": "코다 뒤",
+    "intro": "인트로",
+    "middle_a": "미들 A",
+    "middle_b": "미들 B",
+    "vamp": "뱀프",
+    "pedal": "페달",
+    "late": "후반",
+}
+
+SECTION_HINTS = {
+    "tacet": "출판 베이스가 쉬는 구간입니다. 피아노롤에 음이 있어도 킥·다른 저음 잔여일 수 있고, 탭 피치와 맞출 대상이 아닙니다. 「탭 있는 마디로」를 누르면 벌스부터 검수합니다.",
+}
+
+REVIEW = {
+    "crop": "위 그림은 출판 그 마디입니다. 비어 있으면 베이스가 쉼표입니다.",
+    "roll": "아래 칸은 스템에서 검출한 MIDI입니다. 믹스 잔여가 붙을 수 있습니다.",
+    "listen": "스템처럼 들리는지는 헤드폰으로 비교(왼쪽=스템, 오른쪽=MIDI)를 듣습니다.",
+    "score": "탭과 맞는지 보려면 쉼표가 아닌 마디에서 크롭 TAB과 피아노롤을 대조합니다.",
+}
+
+
 def fixture_songs() -> list[dict]:
     ijji_midi, ijji_quant = _song_midi("ijji", ["*있지*.mid", "*ijji*.mid"])
     af_midi, af_quant = _song_midi("antifreeze", ["*Antifreeze*.mid", "*antifreeze*.mid"])
@@ -166,6 +194,10 @@ def fixture_songs() -> list[dict]:
             "audio": _rel(ijji_audio) if ijji_audio and ijji_audio.is_file() else None,
             "crop_song": "ijji",
             "n_crops": 72,
+            "section_labels": SECTION_LABELS,
+            "section_hints": SECTION_HINTS,
+            "review": REVIEW,
+            "review_from": 12,
         },
         {
             "id": "antifreeze",
@@ -192,6 +224,10 @@ def fixture_songs() -> list[dict]:
             "audio": _rel(af_audio) if af_audio.is_file() else None,
             "crop_song": "antifreeze",
             "n_crops": 80,
+            "section_labels": SECTION_LABELS,
+            "section_hints": SECTION_HINTS,
+            "review": REVIEW,
+            "review_from": 0,
         },
     ]
 
@@ -224,6 +260,10 @@ def job_song(job: Job) -> dict:
         "crop_song": None,
         "n_crops": 0,
         "job_id": job.id,
+        "section_labels": {},
+        "section_hints": {},
+        "review": REVIEW,
+        "review_from": 0,
     }
 
 

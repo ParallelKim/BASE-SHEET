@@ -35,7 +35,45 @@ main { padding: 12px 14px; }
   width: 100%; max-height: 42vh; object-fit: contain; background: #fff;
   border-radius: 8px; border: 1px solid var(--line);
 }
-#score-meta, #meta, .hint { color: var(--muted); font-size: 13px; }
+.score-strip {
+  display: flex; gap: 0; overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: #0e1015; border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px; min-height: 140px;
+}
+.score-cell {
+  flex: 0 0 auto; width: min(72vw, 280px);
+  background: #fff; border: 2px solid transparent; border-radius: 6px;
+  padding: 4px 4px 6px; cursor: pointer; opacity: 0.72;
+}
+.score-cell.on {
+  border-color: var(--play); opacity: 1;
+  box-shadow: 0 0 0 1px rgba(243, 211, 154, 0.35);
+}
+.score-cell img {
+  display: block; width: 100%; height: 28vh; max-height: 220px;
+  object-fit: contain; background: #fff;
+}
+.score-cell .cap {
+  margin: 4px 2px 0; font-size: 12px; color: #333; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.score-cell.on .cap { font-weight: 700; color: #000; }
+.score-cell.missing {
+  display: flex; align-items: center; justify-content: center;
+  color: #666; font-size: 12px; background: #f3f3f3;
+}
+#score-meta, #meta, #sync-meta, .hint, .pane-label { color: var(--muted); font-size: 13px; }
+.pane-label { margin: 12px 0 6px; color: var(--text); font-weight: 600; }
+#sync-meta { margin: 0 0 6px; font-variant-numeric: tabular-nums; }
+.callout {
+  margin: 8px 0 0; padding: 10px 12px; border-radius: 8px;
+  background: #252011; border: 1px solid #5a4a28; color: var(--play); font-size: 13px;
+}
+.review { margin-top: 14px; color: var(--muted); font-size: 13px; }
+.review summary { cursor: pointer; color: var(--text); min-height: 44px; display: flex; align-items: center; }
+.review ol { margin: 8px 0 0; padding-left: 1.2em; }
+.review li { margin: 6px 0; }
 #roll-wrap { position: relative; height: 38vh; min-height: 180px; overflow: auto; background: #0e1015; border-radius: 8px; margin-top: 10px; }
 canvas { display: block; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }

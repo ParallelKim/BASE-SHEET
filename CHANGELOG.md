@@ -4,7 +4,7 @@
 
 웹 스튜디오: 픽스처 MIDI·출판 크롭 대조, 새 스템 업로드 후 전사 (`python scripts/serve_midi_viewer.py`).
 
-정적 호스팅(보기 전용, 무료)과 Hugging Face Spaces Docker(휴대폰 업로드·CPU 전사). 유료 GPU/VM은 쓰지 않음. [docs/hosting.md](docs/hosting.md).
+스튜디오 검수: 출판 마디 줄이 재생과 함께 스크롤. 피아노롤=전곡. 타셋=출판 쉼표. [docs/studio-review.md](docs/studio-review.md).
 
 ## 0.2.0 — 차트·PLAY·믹스 스템 채점
 
