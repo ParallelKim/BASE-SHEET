@@ -74,7 +74,7 @@ main { padding: 12px 14px; }
 .review summary { cursor: pointer; color: var(--text); min-height: 44px; display: flex; align-items: center; }
 .review ol { margin: 8px 0 0; padding-left: 1.2em; }
 .review li { margin: 6px 0; }
-#roll-wrap { position: relative; height: 38vh; min-height: 180px; overflow: auto; background: #0e1015; border-radius: 8px; margin-top: 10px; }
+#roll-wrap { position: relative; height: 38vh; min-height: 180px; overflow: auto; background: #0e1015; border-radius: 8px; margin-top: 10px; cursor: pointer; }
 canvas { display: block; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
 .a { background: var(--note); } .b { background: var(--note2); }

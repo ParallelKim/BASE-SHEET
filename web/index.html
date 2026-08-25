@@ -37,12 +37,12 @@
       </div>
       <p id="missing" hidden>이 곡의 MIDI가 아직 없습니다. 서버에서 한 번 전사하거나 올리기 탭을 쓰세요.</p>
       <div id="score-box">
-        <p class="pane-label">출판 마디 줄 · 재생하면 따라 움직임 · 노란 테두리가 지금</p>
+        <p class="pane-label">출판 마디 줄 · 재생하면 따라 움직임 · 칸을 누르면 그 마디 · 노란 테두리가 지금</p>
         <div id="score-strip" class="score-strip" hidden></div>
         <p id="score-meta"></p>
         <p id="score-hint" class="callout" hidden></p>
       </div>
-      <p class="pane-label">전곡 MIDI · 가로가 시간 · 노란 선·띠가 위 가운데 마디와 같음</p>
+      <p class="pane-label">전곡 MIDI · 가로가 시간 · 눌러서 그 시간으로 · 노란 선·띠가 위 가운데 마디와 같음</p>
       <p id="sync-meta"></p>
       <div id="roll-wrap"><canvas id="roll"></canvas></div>
       <p id="meta"></p>
@@ -50,11 +50,12 @@
       <details class="review" open>
         <summary>어떻게 검수하나요</summary>
         <ol>
-          <li>위는 출판 마디를 <strong>연주 순서로 이어</strong> 보여 줍니다. 재생하면 줄이 재생 위치에 맞춰 부드럽게 이동합니다. 노란 테두리가 지금입니다.</li>
-          <li>아래 피아노롤은 <strong>전곡 MIDI</strong>입니다. 노란 띠·세로선이 위 가운데 마디와 같은 시간입니다.</li>
+          <li>곡을 고르면 <strong>검수 시작 마디</strong>로 갑니다. 있지는 13마디(벌스), Antifreeze는 1마디입니다. 타셋부터 보고 싶으면 정지 뒤 이전 마디로 가세요.</li>
+          <li>위는 출판 마디를 <strong>연주 순서로 이어</strong> 보여 줍니다. 재생하면 줄이 재생 위치에 맞춰 부드럽게 이동합니다. 칸을 누르면 그 마디로. 노란 테두리가 지금입니다.</li>
+          <li>아래 피아노롤은 <strong>전곡 MIDI</strong>입니다. 가로를 누르면 그 시간으로 갑니다. 노란 띠·세로선이 위 가운데 마디와 같은 시간입니다.</li>
           <li><strong>타셋</strong>은 MIDI가 비어서가 아니라, 출판 탭이 쉼표인 구간 이름입니다. 그 칸에 피아노롤 음이 있어도 맞출 대상이 아닙니다.</li>
-          <li>탭과 맞는지 보려면 「탭 있는 마디로」로 간 뒤, 가운데 칸 TAB과 노란 띠 안 음을 대조하세요. 있지는 13마디(벌스)부터입니다.</li>
-          <li>스템처럼 들리는지는 헤드폰으로 <strong>비교</strong>(왼쪽=스템, 오른쪽=MIDI)를 듣습니다.</li>
+          <li>탭과 맞는지 보려면 가운데 칸 TAB과 노란 띠 안 음을 대조하세요. 「탭 있는 마디로」는 같은 시작 마디로 돌아갑니다.</li>
+          <li>스템처럼 들리는지는 헤드폰으로 <strong>비교</strong>(왼쪽=스템, 오른쪽=MIDI)를 듣습니다. 미리듣기 WAV가 있으면 재생 버튼이 그 소리를 쓰고, 롤·마디 줄이 같은 시간을 가리킵니다. 없으면 비프입니다.</li>
         </ol>
       </details>
       <div id="listen-box" hidden>
