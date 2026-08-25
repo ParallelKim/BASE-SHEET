@@ -31,6 +31,16 @@ def test_midi_viewer_page_exists():
     assert "syncStripScroll" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert "STRIP_RADIUS" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert "scrollPlayheadIntoView" in (root / "web" / "studio.js").read_text(encoding="utf-8")
+    js = (root / "web" / "studio.js").read_text(encoding="utf-8")
+    css = (root / "web" / "studio.css").read_text(encoding="utf-8")
+    assert "function seekTo" in js
+    assert "function seekFromRollEvent" in js
+    assert "function playFromWav" in js
+    assert "jumpToPlayedIndex(song.review_from" in js
+    assert "seekFromRollEvent" in js
+    assert "#roll-wrap" in css and "cursor: pointer" in css.split("#roll-wrap", 1)[1].split("}", 1)[0]
+    assert "검수 시작 마디" in page
+    assert "눌러서 그 시간으로" in page
 
 
 def test_studio_catalog_lists_fixture_songs():

@@ -83,12 +83,14 @@ const state = {
   crops: [],
   tracks: [],
   playing: false,
+  playMode: "beep",
   t0: 0,
   ctx: null,
   playhead: 0,
   timer: 0,
   voices: [],
   written: null,
+  rollLayout: { left: 44, px: 1 },
 };
 
 function $(id) { return document.getElementById(id); }
@@ -142,7 +144,7 @@ function updateSyncMeta(t) {
   const el = $("sync-meta");
   if (!el) return;
   const win = barWindow(t == null ? 0 : t);
-  const dur = Math.max(0, ...state.tracks.filter(Boolean).map((tr) => tr.duration));
+  const dur = songDuration();
   if (!win) {
     el.textContent = dur ? `전곡 ${dur.toFixed(0)}초 · 재생 ${(t || 0).toFixed(1)}초` : "";
     return;
@@ -156,14 +158,50 @@ function updateSyncMeta(t) {
     + ` · 재생 중 위 줄이 같이 이동`;
 }
 
+function midiDuration() {
+  return Math.max(0, ...state.tracks.filter(Boolean).map((tr) => tr.duration));
+}
+
+function listenEl() {
+  return $("listen");
+}
+
+function hasListenSrc() {
+  const a = listenEl();
+  return !!(a && a.getAttribute("src"));
+}
+
+function songDuration() {
+  let d = midiDuration();
+  const a = listenEl();
+  if (a && Number.isFinite(a.duration) && a.duration > 0) d = Math.max(d, a.duration);
+  return d;
+}
+
+function seekTo(t) {
+  const dur = songDuration();
+  let next = Number.isFinite(t) ? t : 0;
+  if (next < 0) next = 0;
+  if (dur > 0) next = Math.min(next, dur);
+  state.playhead = next;
+  state.written = null;
+  const a = listenEl();
+  if (a && a.getAttribute("src")) {
+    try { a.currentTime = next; } catch (_) {}
+  }
+  if (state.playing && state.playMode === "beep") {
+    playFromBeep(next);
+    return;
+  }
+  draw(next);
+}
+
 function jumpToPlayedIndex(idx) {
   const song = state.song;
   const barS = barSeconds();
-  if (!song || !song.play.length || !barS) return;
+  if (!song || !song.play || !song.play.length || !barS) return;
   const j = Math.max(0, Math.min(song.play.length - 1, idx));
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  state.written = null;
-  draw(state.playhead);
+  seekTo((song.t0 || 0) + j * barS + 0.05);
 }
 
 function ensureScoreStrip(idx) {
@@ -306,25 +344,13 @@ function setScoreHint(text) {
 
 function skipToReview() {
   const song = state.song;
-  if (!song || !song.play || !song.play.length) return;
-  const j = Math.max(0, Math.min(song.play.length - 1, song.review_from || 0));
-  const barS = barSeconds();
-  if (!barS) return;
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  state.written = null;
-  draw(state.playhead);
+  if (!song) return;
+  jumpToPlayedIndex(song.review_from || 0);
 }
 
 function nudgeBar(delta) {
-  const song = state.song;
-  const barS = barSeconds();
-  if (!song || !song.play.length || !barS) return;
-  let w = state.written || song.play[0];
-  const i = song.play.indexOf(w);
-  const j = Math.max(0, Math.min(song.play.length - 1, (i < 0 ? 0 : i) + delta));
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  state.written = null;
-  draw(state.playhead);
+  const idx = playedIndexAt(state.playhead);
+  jumpToPlayedIndex((idx == null ? 0 : idx) + delta);
 }
 
 function scrollPlayheadIntoView(x) {
@@ -353,6 +379,7 @@ function draw(playhead) {
   for (const n of notes) { lo = Math.min(lo, n.pitch); hi = Math.max(hi, n.pitch); }
   lo = Math.max(21, lo - 1); hi = Math.min(72, hi + 1);
   const rowH = 16, left = 44, px = Math.max(48, (wrap.clientWidth - left) / Math.max(dur, 8) * 6);
+  state.rollLayout = { left, px };
   const W = Math.max(wrap.clientWidth, left + dur * px + 24);
   const H = Math.max(wrap.clientHeight, (hi - lo + 1) * rowH + 8);
   const dpr = window.devicePixelRatio || 1;
@@ -437,25 +464,78 @@ function stopVoices() {
   state.voices = [];
 }
 
-function play() {
-  const notes = allNotes();
-  if (!notes.length) return;
+function playFromBeep(from) {
+  const t = Math.max(0, from || 0);
+  const notes = allNotes().filter((n) => n.end > t);
+  if (!notes.length) {
+    draw(t);
+    return;
+  }
   const ctx = ensureCtx();
   if (ctx.state === "suspended") ctx.resume();
   stopVoices();
   const now = ctx.currentTime + 0.05;
-  state.t0 = now;
+  state.playMode = "beep";
+  state.t0 = now - t;
   state.playing = true;
   $("play").textContent = "일시정지";
   for (const n of notes) {
-    state.voices.push(beep(ctx, n.pitch, Math.max(0.04, n.end - n.start), n.vel, now + n.start));
+    const startAt = now + Math.max(0, n.start - t);
+    const dur = n.end - Math.max(n.start, t);
+    state.voices.push(beep(ctx, n.pitch, Math.max(0.04, dur), n.vel, startAt));
   }
+  startPlayheadTick();
+}
+
+function playFromWav() {
+  const a = listenEl();
+  if (!a || !a.getAttribute("src")) {
+    playFromBeep(state.playhead);
+    return;
+  }
+  stopVoices();
+  if (state.ctx) {
+    try { state.ctx.suspend(); } catch (_) {}
+  }
+  state.playMode = "wav";
+  try { a.currentTime = state.playhead; } catch (_) {}
+  const start = () => {
+    state.playing = true;
+    $("play").textContent = "일시정지";
+    startPlayheadTick();
+  };
+  const p = a.play();
+  if (p && p.then) {
+    p.then(start).catch(() => playFromBeep(state.playhead));
+  } else {
+    start();
+  }
+}
+
+function play() {
+  if (hasListenSrc()) {
+    playFromWav();
+    return;
+  }
+  if (!allNotes().length) return;
+  playFromBeep(state.playhead);
+}
+
+function startPlayheadTick() {
+  cancelAnimationFrame(state.timer);
   const tick = () => {
     if (!state.playing) return;
-    state.playhead = ctx.currentTime - state.t0;
-    draw(state.playhead);
-    const dur = Math.max(0, ...state.tracks.filter(Boolean).map((t) => t.duration));
-    if (state.playhead > dur + 0.2) { stop(); return; }
+    if (state.playMode === "wav") {
+      const a = listenEl();
+      if (!a) { pause(); return; }
+      state.playhead = a.currentTime;
+      draw(state.playhead);
+      if (a.ended) { pause(); return; }
+    } else if (state.ctx) {
+      state.playhead = state.ctx.currentTime - state.t0;
+      draw(state.playhead);
+      if (state.playhead > songDuration() + 0.2) { stop(); return; }
+    }
     state.timer = requestAnimationFrame(tick);
   };
   tick();
@@ -464,17 +544,29 @@ function play() {
 function pause() {
   state.playing = false;
   stopVoices();
-  if (state.ctx) state.ctx.suspend();
+  if (state.ctx) {
+    try { state.ctx.suspend(); } catch (_) {}
+  }
+  const a = listenEl();
+  if (a && !a.paused) {
+    try { a.pause(); } catch (_) {}
+  }
   $("play").textContent = "재생";
   cancelAnimationFrame(state.timer);
 }
 
 function stop() {
   pause();
-  state.playhead = 0;
-  if (state.ctx) state.ctx.resume();
-  draw(0);
-  showCrop(writtenAt(0));
+  seekTo(0);
+}
+
+function seekFromRollEvent(ev) {
+  const layout = state.rollLayout;
+  const wrap = $("roll-wrap");
+  if (!layout || !layout.px || !wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  const x = ev.clientX - rect.left + wrap.scrollLeft;
+  seekTo((x - layout.left) / layout.px);
 }
 
 async function loadUrl(url, slot, name) {
@@ -486,8 +578,7 @@ async function loadUrl(url, slot, name) {
   $("stop").disabled = false;
   const bits = state.tracks.filter(Boolean).map((t) => `${t.name} · ${t.notes.length}음 · ${t.duration.toFixed(0)}s`);
   $("meta").textContent = bits.join("  |  ");
-  draw(0);
-  showCrop(writtenAt(0));
+  draw(state.playhead);
 }
 
 async function fetchJson(urls) {
@@ -521,7 +612,7 @@ async function loadCrops(song) {
   state.crops = [];
   if (song.crops && song.crops.length) {
     state.crops = song.crops;
-    showCrop(writtenAt(0));
+    showCrop(writtenAt(state.playhead));
     return;
   }
   if (!song.crop_song) {
@@ -540,11 +631,13 @@ async function loadCrops(song) {
       });
     }
   }
-  showCrop(writtenAt(0));
+  showCrop(writtenAt(state.playhead));
 }
 
-async function selectSong(id) {
+async function selectSong(id, keepTime) {
+  pause();
   const song = state.catalog.songs.find((s) => s.id === id);
+  const keep = keepTime ? state.playhead : null;
   state.song = song;
   state.tracks = [];
   state.written = null;
@@ -553,6 +646,8 @@ async function selectSong(id) {
   const skip = $("skip-rest");
   if (skip) skip.hidden = !(song && song.review_from);
   if (!song) return;
+  if (keep != null) seekTo(keep);
+  else jumpToPlayedIndex(song.review_from || 0);
   await loadCrops(song);
   applyListenSource();
   const which = $("midi-kind").value;
@@ -565,7 +660,7 @@ async function selectSong(id) {
     await loadUrl(song.midi, 0, "성능");
   } else {
     $("meta").textContent = "이 곡 MIDI가 없습니다. 아래에서 전사하거나 음원을 올리세요.";
-    draw(0);
+    draw(state.playhead);
   }
 }
 
@@ -666,7 +761,7 @@ function bind() {
     b.onclick = () => showTab(b.dataset.tab);
   });
   $("song").onchange = () => selectSong($("song").value);
-  $("midi-kind").onchange = () => state.song && selectSong(state.song.id);
+  $("midi-kind").onchange = () => state.song && selectSong(state.song.id, true);
   $("play").onclick = () => { if (state.playing) pause(); else play(); };
   $("stop").onclick = stop;
   $("prev-bar").onclick = () => nudgeBar(-1);
@@ -683,19 +778,42 @@ function bind() {
     if (f) submitUpload(f);
   });
   $("upload-btn").onclick = () => $("file").click();
+  const wrap = $("roll-wrap");
+  if (wrap) wrap.addEventListener("click", seekFromRollEvent);
   const listen = $("listen");
   if (listen) {
-    listen.addEventListener("play", () => pause());
-    listen.addEventListener("timeupdate", () => {
-      if (!listen.paused) {
-        state.playhead = listen.currentTime;
-        draw(state.playhead);
+    listen.addEventListener("play", () => {
+      stopVoices();
+      state.playMode = "wav";
+      state.playing = true;
+      $("play").textContent = "일시정지";
+      startPlayheadTick();
+    });
+    listen.addEventListener("pause", () => {
+      if (!state.playing) return;
+      if (state.playMode === "wav") {
+        state.playing = false;
+        $("play").textContent = "재생";
+        cancelAnimationFrame(state.timer);
       }
+    });
+    listen.addEventListener("ended", () => {
+      if (state.playMode === "wav") pause();
+    });
+    listen.addEventListener("loadedmetadata", () => {
+      try { listen.currentTime = state.playhead; } catch (_) {}
     });
   }
   const listenKind = $("listen-kind");
-  if (listenKind) listenKind.onchange = () => applyListenSource();
-  window.addEventListener("resize", () => draw(state.playing ? state.playhead : 0));
+  if (listenKind) {
+    listenKind.onchange = () => {
+      const was = state.playing;
+      applyListenSource();
+      if (was) play();
+      else seekTo(state.playhead);
+    };
+  }
+  window.addEventListener("resize", () => draw(state.playhead));
 }
 
 function applyListenSource() {
