@@ -31,6 +31,23 @@ def test_midi_viewer_page_exists():
     assert "syncStripScroll" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert "STRIP_RADIUS" in (root / "web" / "studio.js").read_text(encoding="utf-8")
     assert "scrollPlayheadIntoView" in (root / "web" / "studio.js").read_text(encoding="utf-8")
+    js = (root / "web" / "studio.js").read_text(encoding="utf-8")
+    css = (root / "web" / "studio.css").read_text(encoding="utf-8")
+    assert "function seekTo" in js
+    assert "function seekFromRollEvent" in js
+    assert "function playFromWav" in js
+    assert "jumpToPlayedIndex(song.review_from" in js
+    assert "seekFromRollEvent" in js
+    assert "#roll-wrap" in css and "cursor: pointer" in css.split("#roll-wrap", 1)[1].split("}", 1)[0]
+    assert "검수 시작 마디" in page
+    assert 'data-notation="osmd"' in page
+    assert 'data-notation="alphatab"' in page
+    assert 'data-notation="musescore"' in page
+    assert "function notesToMusicXml" in js
+    assert "opensheetmusicdisplay" in js
+    assert "@coderline/alphatab" in js
+    assert "function cleanNotationNotes" in js
+    assert "짧은 음정 흔들림" in js
 
 
 def test_studio_catalog_lists_fixture_songs():

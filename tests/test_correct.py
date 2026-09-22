@@ -7,6 +7,7 @@ from base_sheet.correct import (
     drop_short_notes,
     median_filter_pitches,
     snap_register_to_neighbors,
+    suppress_pitch_blips,
 )
 from base_sheet.models import NoteEvent
 
@@ -38,6 +39,28 @@ def test_drop_short_notes():
     kept = drop_short_notes(notes, min_duration=0.05)
     assert len(kept) == 1
     assert kept[0].pitch == 41
+
+
+def test_pitch_blip_between_same_pitch_is_removed():
+    notes = [
+        NoteEvent(0.0, 1.0, 30),
+        NoteEvent(1.0, 1.08, 43),
+        NoteEvent(1.08, 2.0, 30),
+    ]
+    out = suppress_pitch_blips(notes)
+    assert [n.pitch for n in out] == [30, 30]
+    assert out[0].end == 1.08
+
+
+def test_repeated_same_pitch_is_not_glued():
+    notes = [
+        NoteEvent(0.00, 0.23, 37),
+        NoteEvent(0.24, 0.47, 37),
+        NoteEvent(0.48, 0.71, 37),
+    ]
+    out = suppress_pitch_blips(notes)
+    assert len(out) == 3
+    assert [n.pitch for n in out] == [37, 37, 37]
 
 
 def test_spectrum_prefers_bass_fundamental_over_h1():

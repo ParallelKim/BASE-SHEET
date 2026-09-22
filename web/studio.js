@@ -83,12 +83,15 @@ const state = {
   crops: [],
   tracks: [],
   playing: false,
+  playMode: "beep",
   t0: 0,
   ctx: null,
   playhead: 0,
   timer: 0,
   voices: [],
   written: null,
+  rollLayout: { left: 44, px: 1 },
+  notationView: "roll",
 };
 
 function $(id) { return document.getElementById(id); }
@@ -142,7 +145,7 @@ function updateSyncMeta(t) {
   const el = $("sync-meta");
   if (!el) return;
   const win = barWindow(t == null ? 0 : t);
-  const dur = Math.max(0, ...state.tracks.filter(Boolean).map((tr) => tr.duration));
+  const dur = songDuration();
   if (!win) {
     el.textContent = dur ? `전곡 ${dur.toFixed(0)}초 · 재생 ${(t || 0).toFixed(1)}초` : "";
     return;
@@ -156,14 +159,50 @@ function updateSyncMeta(t) {
     + ` · 재생 중 위 줄이 같이 이동`;
 }
 
+function midiDuration() {
+  return Math.max(0, ...state.tracks.filter(Boolean).map((tr) => tr.duration));
+}
+
+function listenEl() {
+  return $("listen");
+}
+
+function hasListenSrc() {
+  const a = listenEl();
+  return !!(a && a.getAttribute("src"));
+}
+
+function songDuration() {
+  let d = midiDuration();
+  const a = listenEl();
+  if (a && Number.isFinite(a.duration) && a.duration > 0) d = Math.max(d, a.duration);
+  return d;
+}
+
+function seekTo(t) {
+  const dur = songDuration();
+  let next = Number.isFinite(t) ? t : 0;
+  if (next < 0) next = 0;
+  if (dur > 0) next = Math.min(next, dur);
+  state.playhead = next;
+  state.written = null;
+  const a = listenEl();
+  if (a && a.getAttribute("src")) {
+    try { a.currentTime = next; } catch (_) {}
+  }
+  if (state.playing && state.playMode === "beep") {
+    playFromBeep(next);
+    return;
+  }
+  draw(next);
+}
+
 function jumpToPlayedIndex(idx) {
   const song = state.song;
   const barS = barSeconds();
-  if (!song || !song.play.length || !barS) return;
+  if (!song || !song.play || !song.play.length || !barS) return;
   const j = Math.max(0, Math.min(song.play.length - 1, idx));
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  state.written = null;
-  draw(state.playhead);
+  seekTo((song.t0 || 0) + j * barS + 0.05);
 }
 
 function ensureScoreStrip(idx) {
@@ -306,25 +345,13 @@ function setScoreHint(text) {
 
 function skipToReview() {
   const song = state.song;
-  if (!song || !song.play || !song.play.length) return;
-  const j = Math.max(0, Math.min(song.play.length - 1, song.review_from || 0));
-  const barS = barSeconds();
-  if (!barS) return;
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  state.written = null;
-  draw(state.playhead);
+  if (!song) return;
+  jumpToPlayedIndex(song.review_from || 0);
 }
 
 function nudgeBar(delta) {
-  const song = state.song;
-  const barS = barSeconds();
-  if (!song || !song.play.length || !barS) return;
-  let w = state.written || song.play[0];
-  const i = song.play.indexOf(w);
-  const j = Math.max(0, Math.min(song.play.length - 1, (i < 0 ? 0 : i) + delta));
-  state.playhead = (song.t0 || 0) + j * barS + 0.05;
-  state.written = null;
-  draw(state.playhead);
+  const idx = playedIndexAt(state.playhead);
+  jumpToPlayedIndex((idx == null ? 0 : idx) + delta);
 }
 
 function scrollPlayheadIntoView(x) {
@@ -353,6 +380,7 @@ function draw(playhead) {
   for (const n of notes) { lo = Math.min(lo, n.pitch); hi = Math.max(hi, n.pitch); }
   lo = Math.max(21, lo - 1); hi = Math.min(72, hi + 1);
   const rowH = 16, left = 44, px = Math.max(48, (wrap.clientWidth - left) / Math.max(dur, 8) * 6);
+  state.rollLayout = { left, px };
   const W = Math.max(wrap.clientWidth, left + dur * px + 24);
   const H = Math.max(wrap.clientHeight, (hi - lo + 1) * rowH + 8);
   const dpr = window.devicePixelRatio || 1;
@@ -409,6 +437,7 @@ function draw(playhead) {
   showCrop(writtenAt(t));
   updateSyncMeta(t);
   scrollPlayheadIntoView(x);
+  syncNotationScroll(t);
 }
 
 function ensureCtx() {
@@ -437,25 +466,78 @@ function stopVoices() {
   state.voices = [];
 }
 
-function play() {
-  const notes = allNotes();
-  if (!notes.length) return;
+function playFromBeep(from) {
+  const t = Math.max(0, from || 0);
+  const notes = allNotes().filter((n) => n.end > t);
+  if (!notes.length) {
+    draw(t);
+    return;
+  }
   const ctx = ensureCtx();
   if (ctx.state === "suspended") ctx.resume();
   stopVoices();
   const now = ctx.currentTime + 0.05;
-  state.t0 = now;
+  state.playMode = "beep";
+  state.t0 = now - t;
   state.playing = true;
   $("play").textContent = "일시정지";
   for (const n of notes) {
-    state.voices.push(beep(ctx, n.pitch, Math.max(0.04, n.end - n.start), n.vel, now + n.start));
+    const startAt = now + Math.max(0, n.start - t);
+    const dur = n.end - Math.max(n.start, t);
+    state.voices.push(beep(ctx, n.pitch, Math.max(0.04, dur), n.vel, startAt));
   }
+  startPlayheadTick();
+}
+
+function playFromWav() {
+  const a = listenEl();
+  if (!a || !a.getAttribute("src")) {
+    playFromBeep(state.playhead);
+    return;
+  }
+  stopVoices();
+  if (state.ctx) {
+    try { state.ctx.suspend(); } catch (_) {}
+  }
+  state.playMode = "wav";
+  try { a.currentTime = state.playhead; } catch (_) {}
+  const start = () => {
+    state.playing = true;
+    $("play").textContent = "일시정지";
+    startPlayheadTick();
+  };
+  const p = a.play();
+  if (p && p.then) {
+    p.then(start).catch(() => playFromBeep(state.playhead));
+  } else {
+    start();
+  }
+}
+
+function play() {
+  if (hasListenSrc()) {
+    playFromWav();
+    return;
+  }
+  if (!allNotes().length) return;
+  playFromBeep(state.playhead);
+}
+
+function startPlayheadTick() {
+  cancelAnimationFrame(state.timer);
   const tick = () => {
     if (!state.playing) return;
-    state.playhead = ctx.currentTime - state.t0;
-    draw(state.playhead);
-    const dur = Math.max(0, ...state.tracks.filter(Boolean).map((t) => t.duration));
-    if (state.playhead > dur + 0.2) { stop(); return; }
+    if (state.playMode === "wav") {
+      const a = listenEl();
+      if (!a) { pause(); return; }
+      state.playhead = a.currentTime;
+      draw(state.playhead);
+      if (a.ended) { pause(); return; }
+    } else if (state.ctx) {
+      state.playhead = state.ctx.currentTime - state.t0;
+      draw(state.playhead);
+      if (state.playhead > songDuration() + 0.2) { stop(); return; }
+    }
     state.timer = requestAnimationFrame(tick);
   };
   tick();
@@ -464,17 +546,29 @@ function play() {
 function pause() {
   state.playing = false;
   stopVoices();
-  if (state.ctx) state.ctx.suspend();
+  if (state.ctx) {
+    try { state.ctx.suspend(); } catch (_) {}
+  }
+  const a = listenEl();
+  if (a && !a.paused) {
+    try { a.pause(); } catch (_) {}
+  }
   $("play").textContent = "재생";
   cancelAnimationFrame(state.timer);
 }
 
 function stop() {
   pause();
-  state.playhead = 0;
-  if (state.ctx) state.ctx.resume();
-  draw(0);
-  showCrop(writtenAt(0));
+  seekTo(0);
+}
+
+function seekFromRollEvent(ev) {
+  const layout = state.rollLayout;
+  const wrap = $("roll-wrap");
+  if (!layout || !layout.px || !wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  const x = ev.clientX - rect.left + wrap.scrollLeft;
+  seekTo((x - layout.left) / layout.px);
 }
 
 async function loadUrl(url, slot, name) {
@@ -486,8 +580,8 @@ async function loadUrl(url, slot, name) {
   $("stop").disabled = false;
   const bits = state.tracks.filter(Boolean).map((t) => `${t.name} · ${t.notes.length}음 · ${t.duration.toFixed(0)}s`);
   $("meta").textContent = bits.join("  |  ");
-  draw(0);
-  showCrop(writtenAt(0));
+  draw(state.playhead);
+  refreshNotation();
 }
 
 async function fetchJson(urls) {
@@ -521,7 +615,7 @@ async function loadCrops(song) {
   state.crops = [];
   if (song.crops && song.crops.length) {
     state.crops = song.crops;
-    showCrop(writtenAt(0));
+    showCrop(writtenAt(state.playhead));
     return;
   }
   if (!song.crop_song) {
@@ -540,11 +634,13 @@ async function loadCrops(song) {
       });
     }
   }
-  showCrop(writtenAt(0));
+  showCrop(writtenAt(state.playhead));
 }
 
-async function selectSong(id) {
+async function selectSong(id, keepTime) {
+  pause();
   const song = state.catalog.songs.find((s) => s.id === id);
+  const keep = keepTime ? state.playhead : null;
   state.song = song;
   state.tracks = [];
   state.written = null;
@@ -553,6 +649,8 @@ async function selectSong(id) {
   const skip = $("skip-rest");
   if (skip) skip.hidden = !(song && song.review_from);
   if (!song) return;
+  if (keep != null) seekTo(keep);
+  else jumpToPlayedIndex(song.review_from || 0);
   await loadCrops(song);
   applyListenSource();
   const which = $("midi-kind").value;
@@ -565,7 +663,8 @@ async function selectSong(id) {
     await loadUrl(song.midi, 0, "성능");
   } else {
     $("meta").textContent = "이 곡 MIDI가 없습니다. 아래에서 전사하거나 음원을 올리세요.";
-    draw(0);
+    draw(state.playhead);
+    refreshNotation();
   }
 }
 
@@ -661,12 +760,408 @@ async function renderJobs() {
   }
 }
 
+const OSMD_URL = "https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@2.1.3/build/opensheetmusicdisplay.min.js";
+const AT_URL = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/alphaTab.min.js";
+const AT_FONT = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/font/";
+const scriptLoads = {};
+
+function loadScript(src) {
+  if (!scriptLoads[src]) {
+    scriptLoads[src] = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("스크립트를 불러오지 못했습니다"));
+      document.head.appendChild(s);
+    });
+  }
+  return scriptLoads[src];
+}
+
+function xmlEscape(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;",
+  }[c]));
+}
+
+function keyInfo(text) {
+  const raw = String(text || "").trim();
+  const minor = /minor/i.test(raw);
+  const name = raw.replace(/minor|major/ig, "").trim();
+  const table = {
+    "C": [0, "major"], "G": [1, "major"], "D": [2, "major"], "A": [3, "major"],
+    "E": [4, "major"], "B": [5, "major"], "F#": [6, "major"], "C#": [7, "major"],
+    "F": [-1, "major"], "Bb": [-2, "major"], "Eb": [-3, "major"], "Ab": [-4, "major"],
+    "A minor": [0, "minor"], "E minor": [1, "minor"], "B minor": [2, "minor"],
+    "F# minor": [3, "minor"], "C# minor": [4, "minor"], "G# minor": [5, "minor"],
+    "D minor": [-1, "minor"], "G minor": [-2, "minor"], "C minor": [-3, "minor"],
+  };
+  const hit = table[minor ? name + " minor" : name] || table[raw];
+  if (!hit) return { fifths: 0, mode: "major" };
+  return { fifths: hit[0], mode: hit[1] };
+}
+
+const SHARP_SPELL = [["C", 0], ["C", 1], ["D", 0], ["D", 1], ["E", 0], ["F", 0], ["F", 1], ["G", 0], ["G", 1], ["A", 0], ["A", 1], ["B", 0]];
+const FLAT_SPELL = [["C", 0], ["D", -1], ["D", 0], ["E", -1], ["E", 0], ["F", 0], ["G", -1], ["G", 0], ["A", -1], ["A", 0], ["B", -1], ["B", 0]];
+const BASS_TUNING = [43, 38, 33, 28];
+
+function spellPitch(midi, fifths) {
+  const pc = ((midi % 12) + 12) % 12;
+  const pair = (fifths < 0 ? FLAT_SPELL : SHARP_SPELL)[pc];
+  return { step: pair[0], alter: pair[1], octave: Math.floor(midi / 12) - 1 };
+}
+
+function bassStringFret(midi) {
+  let best = null;
+  for (let s = 0; s < BASS_TUNING.length; s++) {
+    const fret = midi - BASS_TUNING[s];
+    if (fret < 0 || fret > 20) continue;
+    if (!best || fret < best.fret) best = { string: s + 1, fret };
+  }
+  return best || { string: 4, fret: Math.max(0, midi - 28) };
+}
+
+function notationSourceNotes() {
+  const kind = ($("midi-kind") && $("midi-kind").value) || "perf";
+  if ((kind === "quant" || kind === "both") && state.tracks[1]) return state.tracks[1].notes;
+  if (state.tracks[0]) return state.tracks[0].notes;
+  return [];
+}
+
+function sameNotationPitch(a, b) {
+  return a === b || Math.abs(a - b) === 12;
+}
+
+function mergeSamePitch(notes) {
+  const out = [];
+  for (const n of notes) {
+    const prev = out[out.length - 1];
+    if (prev && sameNotationPitch(prev.pitch, n.pitch) && n.start - prev.end < 0.45) {
+      prev.end = Math.max(prev.end, n.end);
+      if (n.end - n.start > prev.end - prev.start) prev.pitch = n.pitch;
+    } else {
+      out.push({ start: n.start, end: n.end, pitch: n.pitch });
+    }
+  }
+  return out;
+}
+
+function cleanNotationNotes(raw) {
+  const sorted = raw
+    .filter((n) => n.end - n.start >= 0.08)
+    .map((n) => ({ start: n.start, end: n.end, pitch: n.pitch }))
+    .sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const mono = [];
+  for (const n of sorted) {
+    if (!mono.length) {
+      mono.push({ ...n });
+      continue;
+    }
+    const prev = mono[mono.length - 1];
+    if (n.start >= prev.end - 0.02) {
+      mono.push({ ...n });
+      continue;
+    }
+    const nDur = n.end - Math.max(n.start, prev.start);
+    const prevDur = prev.end - prev.start;
+    if (nDur > prevDur && n.start <= prev.start + 0.08) {
+      mono[mono.length - 1] = { ...n };
+      continue;
+    }
+    if (n.end <= prev.end) continue;
+    prev.end = Math.max(prev.start, n.start);
+    if (prev.end - prev.start < 0.2) mono.pop();
+    mono.push({ start: Math.max(n.start, prev ? prev.end : n.start), end: n.end, pitch: n.pitch });
+  }
+  let notes = mergeSamePitch(mono.filter((n) => n.end - n.start >= 0.2));
+  const kept = [];
+  for (let i = 0; i < notes.length; i++) {
+    const n = notes[i];
+    const dur = n.end - n.start;
+    const prev = notes[i - 1];
+    const next = notes[i + 1];
+    const gapBefore = prev ? n.start - prev.end : 99;
+    const gapAfter = next ? next.start - n.end : 99;
+    const betweenSame = prev && next && sameNotationPitch(prev.pitch, next.pitch)
+      && !sameNotationPitch(prev.pitch, n.pitch) && gapBefore < 0.5 && gapAfter < 0.5 && dur < 0.45;
+    const flicker = dur < 0.28 && (
+      (prev && sameNotationPitch(prev.pitch, n.pitch) === false && Math.abs(prev.pitch - n.pitch) <= 2 && (prev.end - prev.start) >= dur * 2 && gapBefore < 0.35)
+      || (next && Math.abs(next.pitch - n.pitch) <= 2 && (next.end - next.start) >= dur * 2 && gapAfter < 0.35 && (!prev || sameNotationPitch(prev.pitch, next.pitch)))
+    );
+    if (betweenSame || flicker) continue;
+    const pitch = prev && sameNotationPitch(prev.pitch, n.pitch) ? prev.pitch : n.pitch;
+    kept.push({ start: n.start, end: n.end, pitch });
+  }
+  notes = mergeSamePitch(kept);
+  const snapped = [];
+  for (const n of notes) {
+    const start = Math.round(n.start * 2) / 2;
+    let end = Math.round(n.end * 2) / 2;
+    if (end <= start) end = start + 0.5;
+    const prev = snapped[snapped.length - 1];
+    if (prev && start < prev.end) {
+      if (sameNotationPitch(prev.pitch, n.pitch)) {
+        prev.end = Math.max(prev.end, end);
+        continue;
+      }
+      if (end - start <= prev.end - prev.start) continue;
+      prev.end = start;
+      if (prev.end <= prev.start) snapped.pop();
+    }
+    snapped.push({ start, end, pitch: n.pitch });
+  }
+  return snapped.filter((n) => n.end - n.start >= 0.5);
+}
+
+const NOTE_TYPES = [[4, "whole", false], [3, "half", true], [2, "half", false], [1.5, "quarter", true], [1, "quarter", false], [0.5, "eighth", false]];
+
+function durationChunks(ql) {
+  const chunks = [];
+  let left = Math.round(ql * 2) / 2;
+  while (left > 0.24) {
+    const hit = NOTE_TYPES.find((row) => row[0] <= left + 1e-6);
+    if (!hit) break;
+    chunks.push({ ql: hit[0], type: hit[1], dot: hit[2] });
+    left = Math.round((left - hit[0]) * 2) / 2;
+  }
+  return chunks;
+}
+
+function notesToMusicXml(mono, bpm, keyText, title) {
+  const key = keyInfo(keyText);
+  const notes = mono.filter((n) => n.end > n.start);
+  const endQl = notes.reduce((m, n) => Math.max(m, n.end), 4);
+  const bars = Math.max(1, Math.ceil(endQl / 4));
+  const events = [];
+  let cursor = 0;
+  for (const n of notes) {
+    if (n.start > cursor + 0.2) events.push({ start: cursor, end: n.start, pitch: null });
+    events.push(n);
+    cursor = n.end;
+  }
+  if (cursor < bars * 4 - 0.2) events.push({ start: cursor, end: bars * 4, pitch: null });
+  let measures = "";
+  let measure = 1;
+  let open = false;
+  const openMeasure = () => {
+    if (open) return;
+    measures += `<measure number="${measure}">`;
+    if (measure === 1) {
+      measures += `<attributes><divisions>2</divisions><key><fifths>${key.fifths}</fifths><mode>${key.mode}</mode></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef><staff-details><staff-lines>4</staff-lines><staff-tuning line="1"><tuning-step>G</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="2"><tuning-step>D</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="3"><tuning-step>A</tuning-step><tuning-octave>1</tuning-octave></staff-tuning><staff-tuning line="4"><tuning-step>E</tuning-step><tuning-octave>1</tuning-octave></staff-tuning></staff-details></attributes>`;
+      measures += `<direction><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${Math.round(bpm)}</per-minute></metronome></direction-type><sound tempo="${Math.round(bpm)}"/></direction>`;
+    }
+    open = true;
+  };
+  const closeMeasure = () => {
+    if (!open) return;
+    measures += `</measure>`;
+    open = false;
+    measure += 1;
+  };
+  for (const ev of events) {
+    let t = ev.start;
+    while (t < ev.end - 0.05) {
+      const barEnd = measure * 4;
+      const slice = Math.min(ev.end, barEnd) - t;
+      const chunks = durationChunks(slice);
+      chunks.forEach((chunk, idx) => {
+        openMeasure();
+        const more = idx < chunks.length - 1 || ev.end > barEnd + 0.05;
+        const tiedIn = ev.pitch != null && (t > ev.start + 0.05);
+        if (ev.pitch == null) {
+          measures += `<note><rest/><duration>${chunk.ql * 2}</duration><type>${chunk.type}</type>${chunk.dot ? `<dot/>` : ""}</note>`;
+        } else {
+          const sp = spellPitch(ev.pitch, key.fifths);
+          const sf = bassStringFret(ev.pitch);
+          const alter = sp.alter ? `<alter>${sp.alter}</alter>` : "";
+          const ties = `${tiedIn ? `<tie type="stop"/>` : ""}${more ? `<tie type="start"/>` : ""}`;
+          const tied = `${tiedIn ? `<tied type="stop"/>` : ""}${more ? `<tied type="start"/>` : ""}`;
+          measures += `<note><pitch><step>${sp.step}</step>${alter}<octave>${sp.octave}</octave></pitch><duration>${chunk.ql * 2}</duration>${ties}<type>${chunk.type}</type>${chunk.dot ? `<dot/>` : ""}<notations>${tied}<technical><string>${sf.string}</string><fret>${sf.fret}</fret></technical></notations></note>`;
+        }
+        t += chunk.ql;
+      });
+      if (Math.abs(t - barEnd) < 0.06) closeMeasure();
+      if (!chunks.length) break;
+    }
+  }
+  closeMeasure();
+  return `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<score-partwise version="3.1"><work><work-title>${xmlEscape(title || "Bass")}</work-title></work>` +
+    `<part-list><score-part id="P1"><part-name>Bass</part-name>` +
+    `<score-instrument id="P1-I1"><instrument-name>Electric Bass</instrument-name></score-instrument>` +
+    `<midi-instrument id="P1-I1"><midi-channel>1</midi-channel><midi-program>34</midi-program></midi-instrument>` +
+    `</score-part></part-list><part id="P1">${measures}</part></score-partwise>`;
+}
+
+function buildNotationXml() {
+  const song = state.song;
+  const bpm = (song && song.bpm) || (state.tracks[0] && state.tracks[0].bpm) || 120;
+  const origin = (song && song.t0) || 0;
+  const beat = 60 / bpm;
+  const raw = [];
+  for (const n of notationSourceNotes()) {
+    let start = (n.start - origin) / beat;
+    let end = (n.end - origin) / beat;
+    if (end <= 0) continue;
+    if (start < 0) start = 0;
+    if (end - start < 0.08) continue;
+    raw.push({ start, end, pitch: n.pitch });
+  }
+  return notesToMusicXml(cleanNotationNotes(raw), bpm, song && song.key, song && song.title);
+}
+
+function setNotationNote(text) {
+  const el = $("notation-note");
+  if (el) el.textContent = text || "";
+}
+
+const NOTATION_NOTES = {
+  roll: "피아노롤은 가로가 시간입니다. 누르면 그 시간으로 갑니다. 노란 선·띠가 위 가운데 마디와 같습니다.",
+  osmd: "OSMD · BSD. 악보에 그리기 전에 짧은 음정 흔들림은 빼며, 같은 음은 한 음표로 잇습니다. 피아노롤의 MIDI는 그대로입니다.",
+  alphatab: "alphaTab · MPL-2.0. 오선과 4현 탭입니다. 짧은 흔들림은 빼며 같은 음은 한 음표로 잇습니다. 줄·프렛은 표준 튜닝 추정이고, 출판 탭이 아닙니다.",
+  musescore: "MuseScore는 데스크톱 앱입니다. MIDI를 받아 거기서 열면 오선으로 양자화됩니다.",
+};
+
+function updateMuseScoreLink() {
+  const a = $("midi-download");
+  const song = state.song;
+  if (!a) return;
+  const kind = ($("midi-kind") && $("midi-kind").value) || "perf";
+  const url = song && ((kind === "quant" && song.quant) || song.midi || song.quant);
+  if (!url) {
+    a.removeAttribute("href");
+    a.textContent = "이 곡 MIDI가 없습니다.";
+    return;
+  }
+  a.href = url;
+  a.textContent = url.split("/").pop() + " 받기";
+}
+
+function syncNotationScroll(t) {
+  const id = state.notationView === "osmd" ? "osmd-wrap" : state.notationView === "alphatab" ? "alphatab-wrap" : "";
+  const el = id && $(id);
+  if (!el || el.hidden) return;
+  const dur = songDuration();
+  const max = el.scrollHeight - el.clientHeight;
+  if (!dur || max <= 0) return;
+  const frac = Math.min(1, Math.max(0, (t || 0) / dur));
+  el.scrollTop = frac * max;
+}
+
+function seekFromNotationEvent(ev) {
+  if (state.notationView !== "osmd" && state.notationView !== "alphatab") return;
+  const el = ev.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const y = ev.clientY - rect.top + el.scrollTop;
+  const frac = el.scrollHeight ? y / el.scrollHeight : 0;
+  seekTo(frac * songDuration());
+}
+
+let notationToken = 0;
+
+async function renderOsmd(xml) {
+  await loadScript(OSMD_URL);
+  const el = $("osmd-wrap");
+  el.innerHTML = "";
+  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(el, {
+    backend: "svg",
+    drawTitle: true,
+    drawPartNames: false,
+    autoResize: true,
+    drawingParameters: "compacttight",
+  });
+  state.osmd = osmd;
+  await osmd.load(xml);
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  osmd.render();
+}
+
+async function ensureAlphaTab() {
+  await loadScript(AT_URL);
+  if (state.alphaTab) return state.alphaTab;
+  const el = $("alphatab-wrap");
+  state.alphaTab = new alphaTab.AlphaTabApi(el, {
+    core: {
+      engine: "svg",
+      scriptFile: AT_URL,
+      fontDirectory: AT_FONT,
+    },
+    display: {
+      layoutMode: alphaTab.LayoutMode.Page,
+      staveProfile: alphaTab.StaveProfile.ScoreTab,
+      barsPerRow: 4,
+    },
+    player: {
+      enablePlayer: false,
+      enableCursor: false,
+      scrollElement: el,
+    },
+  });
+  return state.alphaTab;
+}
+
+async function renderAlphaTab(xml) {
+  const api = await ensureAlphaTab();
+  const bytes = new TextEncoder().encode(xml);
+  const ok = api.load(bytes);
+  if (ok === false) throw new Error("alphaTab이 이 악보를 열지 못했습니다");
+  await new Promise((resolve) => {
+    const timer = setTimeout(resolve, 20000);
+    if (api.renderFinished && api.renderFinished.on) {
+      const off = api.renderFinished.on(() => {
+        clearTimeout(timer);
+        if (typeof off === "function") off();
+        resolve();
+      });
+    }
+  });
+}
+
+function refreshNotation() {
+  const view = state.notationView;
+  if (view !== "osmd" && view !== "alphatab") return;
+  const notes = notationSourceNotes();
+  if (!notes.length) {
+    setNotationNote("MIDI가 없습니다.");
+    return;
+  }
+  const token = ++notationToken;
+  setNotationNote("악보 그리는 중…");
+  const xml = buildNotationXml();
+  const job = view === "osmd" ? renderOsmd(xml) : renderAlphaTab(xml);
+  job.then(() => {
+    if (token !== notationToken) return;
+    setNotationNote(NOTATION_NOTES[view]);
+    requestAnimationFrame(() => syncNotationScroll(state.playhead));
+  }).catch((err) => {
+    if (token !== notationToken) return;
+    setNotationNote("악보를 그리지 못했습니다. " + (err && err.message ? err.message : err));
+  });
+}
+
+function setNotationView(name) {
+  state.notationView = name;
+  document.querySelectorAll("#notation-switch button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.notation === name);
+  });
+  const map = { roll: "roll-wrap", osmd: "osmd-wrap", alphatab: "alphatab-wrap", musescore: "musescore-wrap" };
+  for (const [key, id] of Object.entries(map)) {
+    const el = $(id);
+    if (el) el.hidden = key !== name;
+  }
+  setNotationNote(NOTATION_NOTES[name] || "");
+  if (name === "musescore") updateMuseScoreLink();
+  if (name === "osmd" || name === "alphatab") refreshNotation();
+  else draw(state.playhead);
+}
+
 function bind() {
   document.querySelectorAll(".tabs button").forEach((b) => {
     b.onclick = () => showTab(b.dataset.tab);
   });
   $("song").onchange = () => selectSong($("song").value);
-  $("midi-kind").onchange = () => state.song && selectSong(state.song.id);
+  $("midi-kind").onchange = () => state.song && selectSong(state.song.id, true);
   $("play").onclick = () => { if (state.playing) pause(); else play(); };
   $("stop").onclick = stop;
   $("prev-bar").onclick = () => nudgeBar(-1);
@@ -683,19 +1178,49 @@ function bind() {
     if (f) submitUpload(f);
   });
   $("upload-btn").onclick = () => $("file").click();
+  const wrap = $("roll-wrap");
+  if (wrap) wrap.addEventListener("click", seekFromRollEvent);
+  document.querySelectorAll("#notation-switch button").forEach((b) => {
+    b.onclick = () => setNotationView(b.dataset.notation);
+  });
+  for (const id of ["osmd-wrap", "alphatab-wrap"]) {
+    const pane = $(id);
+    if (pane) pane.addEventListener("click", seekFromNotationEvent);
+  }
   const listen = $("listen");
   if (listen) {
-    listen.addEventListener("play", () => pause());
-    listen.addEventListener("timeupdate", () => {
-      if (!listen.paused) {
-        state.playhead = listen.currentTime;
-        draw(state.playhead);
+    listen.addEventListener("play", () => {
+      stopVoices();
+      state.playMode = "wav";
+      state.playing = true;
+      $("play").textContent = "일시정지";
+      startPlayheadTick();
+    });
+    listen.addEventListener("pause", () => {
+      if (!state.playing) return;
+      if (state.playMode === "wav") {
+        state.playing = false;
+        $("play").textContent = "재생";
+        cancelAnimationFrame(state.timer);
       }
+    });
+    listen.addEventListener("ended", () => {
+      if (state.playMode === "wav") pause();
+    });
+    listen.addEventListener("loadedmetadata", () => {
+      try { listen.currentTime = state.playhead; } catch (_) {}
     });
   }
   const listenKind = $("listen-kind");
-  if (listenKind) listenKind.onchange = () => applyListenSource();
-  window.addEventListener("resize", () => draw(state.playing ? state.playhead : 0));
+  if (listenKind) {
+    listenKind.onchange = () => {
+      const was = state.playing;
+      applyListenSource();
+      if (was) play();
+      else seekTo(state.playhead);
+    };
+  }
+  window.addEventListener("resize", () => draw(state.playhead));
 }
 
 function applyListenSource() {

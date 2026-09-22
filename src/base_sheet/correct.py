@@ -101,6 +101,55 @@ def drop_short_notes(
     return [n for n in notes if n.duration >= min_duration]
 
 
+def _pitch_class(pitch: int) -> int:
+    return int(pitch) % 12
+
+
+def suppress_pitch_blips(
+    notes: list[NoteEvent],
+    *,
+    max_duration: float = 0.12,
+    max_gap: float = 0.05,
+) -> list[NoteEvent]:
+    """Drop a short foreign pitch squeezed between two notes of one pitch class.
+
+    The blip's time is given back to the previous note so the sustain does not
+    hiccup. Repeated notes of the same pitch are kept: those are re-attacks.
+    """
+    if len(notes) < 3:
+        return list(notes)
+    ordered = sorted(notes, key=lambda n: (n.start, n.pitch))
+    drop: set[int] = set()
+    for i in range(1, len(ordered) - 1):
+        note = ordered[i]
+        prev = ordered[i - 1]
+        nxt = ordered[i + 1]
+        if note.duration > max_duration:
+            continue
+        if note.start - prev.end > max_gap or nxt.start - note.end > max_gap:
+            continue
+        if _pitch_class(prev.pitch) != _pitch_class(nxt.pitch):
+            continue
+        if _pitch_class(note.pitch) == _pitch_class(prev.pitch):
+            continue
+        drop.add(i)
+    out: list[NoteEvent] = []
+    for i, note in enumerate(ordered):
+        if i in drop:
+            if out and _pitch_class(out[-1].pitch) == _pitch_class(ordered[i - 1].pitch):
+                prev = out[-1]
+                nxt = ordered[i + 1]
+                out[-1] = NoteEvent(
+                    start=prev.start,
+                    end=min(max(prev.end, note.end), nxt.start),
+                    pitch=prev.pitch,
+                    amplitude=prev.amplitude,
+                )
+            continue
+        out.append(note)
+    return out
+
+
 def correct_contour(
     midi_pitches: np.ndarray,
     confidence: np.ndarray | None = None,
