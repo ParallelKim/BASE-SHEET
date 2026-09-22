@@ -91,6 +91,7 @@ const state = {
   voices: [],
   written: null,
   rollLayout: { left: 44, px: 1 },
+  notationView: "roll",
 };
 
 function $(id) { return document.getElementById(id); }
@@ -436,6 +437,7 @@ function draw(playhead) {
   showCrop(writtenAt(t));
   updateSyncMeta(t);
   scrollPlayheadIntoView(x);
+  syncNotationScroll(t);
 }
 
 function ensureCtx() {
@@ -579,6 +581,7 @@ async function loadUrl(url, slot, name) {
   const bits = state.tracks.filter(Boolean).map((t) => `${t.name} · ${t.notes.length}음 · ${t.duration.toFixed(0)}s`);
   $("meta").textContent = bits.join("  |  ");
   draw(state.playhead);
+  refreshNotation();
 }
 
 async function fetchJson(urls) {
@@ -661,6 +664,7 @@ async function selectSong(id, keepTime) {
   } else {
     $("meta").textContent = "이 곡 MIDI가 없습니다. 아래에서 전사하거나 음원을 올리세요.";
     draw(state.playhead);
+    refreshNotation();
   }
 }
 
@@ -756,6 +760,285 @@ async function renderJobs() {
   }
 }
 
+const OSMD_URL = "https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@2.1.3/build/opensheetmusicdisplay.min.js";
+const AT_URL = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/alphaTab.min.js";
+const AT_FONT = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/font/";
+const scriptLoads = {};
+
+function loadScript(src) {
+  if (!scriptLoads[src]) {
+    scriptLoads[src] = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("스크립트를 불러오지 못했습니다"));
+      document.head.appendChild(s);
+    });
+  }
+  return scriptLoads[src];
+}
+
+function xmlEscape(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;",
+  }[c]));
+}
+
+function keyInfo(text) {
+  const raw = String(text || "").trim();
+  const minor = /minor/i.test(raw);
+  const name = raw.replace(/minor|major/ig, "").trim();
+  const table = {
+    "C": [0, "major"], "G": [1, "major"], "D": [2, "major"], "A": [3, "major"],
+    "E": [4, "major"], "B": [5, "major"], "F#": [6, "major"], "C#": [7, "major"],
+    "F": [-1, "major"], "Bb": [-2, "major"], "Eb": [-3, "major"], "Ab": [-4, "major"],
+    "A minor": [0, "minor"], "E minor": [1, "minor"], "B minor": [2, "minor"],
+    "F# minor": [3, "minor"], "C# minor": [4, "minor"], "G# minor": [5, "minor"],
+    "D minor": [-1, "minor"], "G minor": [-2, "minor"], "C minor": [-3, "minor"],
+  };
+  const hit = table[minor ? name + " minor" : name] || table[raw];
+  if (!hit) return { fifths: 0, mode: "major" };
+  return { fifths: hit[0], mode: hit[1] };
+}
+
+const SHARP_SPELL = [["C", 0], ["C", 1], ["D", 0], ["D", 1], ["E", 0], ["F", 0], ["F", 1], ["G", 0], ["G", 1], ["A", 0], ["A", 1], ["B", 0]];
+const FLAT_SPELL = [["C", 0], ["D", -1], ["D", 0], ["E", -1], ["E", 0], ["F", 0], ["G", -1], ["G", 0], ["A", -1], ["A", 0], ["B", -1], ["B", 0]];
+const BASS_TUNING = [43, 38, 33, 28];
+
+function spellPitch(midi, fifths) {
+  const pc = ((midi % 12) + 12) % 12;
+  const pair = (fifths < 0 ? FLAT_SPELL : SHARP_SPELL)[pc];
+  return { step: pair[0], alter: pair[1], octave: Math.floor(midi / 12) - 1 };
+}
+
+function bassStringFret(midi) {
+  let best = null;
+  for (let s = 0; s < BASS_TUNING.length; s++) {
+    const fret = midi - BASS_TUNING[s];
+    if (fret < 0 || fret > 20) continue;
+    if (!best || fret < best.fret) best = { string: s + 1, fret };
+  }
+  return best || { string: 4, fret: Math.max(0, midi - 28) };
+}
+
+function notationSourceNotes() {
+  const kind = ($("midi-kind") && $("midi-kind").value) || "perf";
+  if ((kind === "quant" || kind === "both") && state.tracks[1]) return state.tracks[1].notes;
+  if (state.tracks[0]) return state.tracks[0].notes;
+  return [];
+}
+
+function notesToMusicXml(mono, bpm, keyText, title) {
+  const key = keyInfo(keyText);
+  const last = mono.reduce((m, n) => Math.max(m, n.end), 0);
+  const slots = Math.max(8, Math.ceil(last * 2));
+  const grid = new Array(slots).fill(null);
+  for (const n of mono) {
+    const a = Math.max(0, Math.round(n.start * 2));
+    const b = Math.max(a + 1, Math.round(n.end * 2));
+    for (let i = a; i < b && i < grid.length; i++) grid[i] = n.pitch;
+  }
+  while (grid.length % 8) grid.push(null);
+  let measures = "";
+  for (let i = 0; i < grid.length; i++) {
+    if (i % 8 === 0) {
+      measures += `<measure number="${i / 8 + 1}">`;
+      if (i === 0) {
+        measures += `<attributes><divisions>2</divisions><key><fifths>${key.fifths}</fifths><mode>${key.mode}</mode></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef><staff-details><staff-lines>4</staff-lines><staff-tuning line="1"><tuning-step>G</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="2"><tuning-step>D</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="3"><tuning-step>A</tuning-step><tuning-octave>1</tuning-octave></staff-tuning><staff-tuning line="4"><tuning-step>E</tuning-step><tuning-octave>1</tuning-octave></staff-tuning></staff-details></attributes>`;
+        measures += `<direction><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${Math.round(bpm)}</per-minute></metronome></direction-type><sound tempo="${Math.round(bpm)}"/></direction>`;
+      }
+    }
+    const pitch = grid[i];
+    const prev = i > 0 && grid[i - 1] === pitch && pitch != null;
+    const next = i + 1 < grid.length && grid[i + 1] === pitch && pitch != null;
+    if (pitch == null) {
+      measures += `<note><rest/><duration>1</duration><type>eighth</type></note>`;
+    } else {
+      const sp = spellPitch(pitch, key.fifths);
+      const sf = bassStringFret(pitch);
+      const alter = sp.alter ? `<alter>${sp.alter}</alter>` : "";
+      const ties = `${prev ? `<tie type="stop"/>` : ""}${next ? `<tie type="start"/>` : ""}`;
+      const tied = `${prev ? `<tied type="stop"/>` : ""}${next ? `<tied type="start"/>` : ""}`;
+      measures += `<note><pitch><step>${sp.step}</step>${alter}<octave>${sp.octave}</octave></pitch><duration>1</duration>${ties}<type>eighth</type><notations>${tied}<technical><string>${sf.string}</string><fret>${sf.fret}</fret></technical></notations></note>`;
+    }
+    if (i % 8 === 7) measures += `</measure>`;
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<score-partwise version="3.1"><work><work-title>${xmlEscape(title || "Bass")}</work-title></work>` +
+    `<part-list><score-part id="P1"><part-name>Bass</part-name>` +
+    `<score-instrument id="P1-I1"><instrument-name>Electric Bass</instrument-name></score-instrument>` +
+    `<midi-instrument id="P1-I1"><midi-channel>1</midi-channel><midi-program>34</midi-program></midi-instrument>` +
+    `</score-part></part-list><part id="P1">${measures}</part></score-partwise>`;
+}
+
+function buildNotationXml() {
+  const song = state.song;
+  const bpm = (song && song.bpm) || (state.tracks[0] && state.tracks[0].bpm) || 120;
+  const origin = (song && song.t0) || 0;
+  const beat = 60 / bpm;
+  const mono = [];
+  for (const n of notationSourceNotes()) {
+    let start = (n.start - origin) / beat;
+    let end = (n.end - origin) / beat;
+    if (end <= 0) continue;
+    if (start < 0) start = 0;
+    start = Math.round(start * 2) / 2;
+    end = Math.max(start + 0.5, Math.round(end * 2) / 2);
+    if (mono.length && start < mono[mono.length - 1].end) {
+      if (start <= mono[mono.length - 1].start) continue;
+      mono[mono.length - 1].end = start;
+    }
+    mono.push({ start, end, pitch: n.pitch });
+  }
+  return notesToMusicXml(mono, bpm, song && song.key, song && song.title);
+}
+
+function setNotationNote(text) {
+  const el = $("notation-note");
+  if (el) el.textContent = text || "";
+}
+
+const NOTATION_NOTES = {
+  roll: "피아노롤은 가로가 시간입니다. 누르면 그 시간으로 갑니다. 노란 선·띠가 위 가운데 마디와 같습니다.",
+  osmd: "OSMD · BSD. 같은 MIDI를 8분 그리드 오선으로 그렸습니다. 마디 번호는 연주 순서입니다. 칸을 누르면 그 높이의 시간으로 갑니다.",
+  alphatab: "alphaTab · MPL-2.0. 오선과 4현 탭입니다. 줄·프렛은 표준 튜닝에서 가장 낮은 프렛으로 추정한 것이고, 출판 탭이 아닙니다.",
+  musescore: "MuseScore는 데스크톱 앱입니다. MIDI를 받아 거기서 열면 오선으로 양자화됩니다.",
+};
+
+function updateMuseScoreLink() {
+  const a = $("midi-download");
+  const song = state.song;
+  if (!a) return;
+  const kind = ($("midi-kind") && $("midi-kind").value) || "perf";
+  const url = song && ((kind === "quant" && song.quant) || song.midi || song.quant);
+  if (!url) {
+    a.removeAttribute("href");
+    a.textContent = "이 곡 MIDI가 없습니다.";
+    return;
+  }
+  a.href = url;
+  a.textContent = url.split("/").pop() + " 받기";
+}
+
+function syncNotationScroll(t) {
+  const id = state.notationView === "osmd" ? "osmd-wrap" : state.notationView === "alphatab" ? "alphatab-wrap" : "";
+  const el = id && $(id);
+  if (!el || el.hidden) return;
+  const dur = songDuration();
+  const max = el.scrollHeight - el.clientHeight;
+  if (!dur || max <= 0) return;
+  const frac = Math.min(1, Math.max(0, (t || 0) / dur));
+  el.scrollTop = frac * max;
+}
+
+function seekFromNotationEvent(ev) {
+  if (state.notationView !== "osmd" && state.notationView !== "alphatab") return;
+  const el = ev.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const y = ev.clientY - rect.top + el.scrollTop;
+  const frac = el.scrollHeight ? y / el.scrollHeight : 0;
+  seekTo(frac * songDuration());
+}
+
+let notationToken = 0;
+
+async function renderOsmd(xml) {
+  await loadScript(OSMD_URL);
+  const el = $("osmd-wrap");
+  el.innerHTML = "";
+  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(el, {
+    backend: "svg",
+    drawTitle: true,
+    drawPartNames: false,
+    autoResize: true,
+    drawingParameters: "compacttight",
+  });
+  state.osmd = osmd;
+  await osmd.load(xml);
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  osmd.render();
+}
+
+async function ensureAlphaTab() {
+  await loadScript(AT_URL);
+  if (state.alphaTab) return state.alphaTab;
+  const el = $("alphatab-wrap");
+  state.alphaTab = new alphaTab.AlphaTabApi(el, {
+    core: {
+      engine: "svg",
+      scriptFile: AT_URL,
+      fontDirectory: AT_FONT,
+    },
+    display: {
+      layoutMode: alphaTab.LayoutMode.Page,
+      staveProfile: alphaTab.StaveProfile.ScoreTab,
+      barsPerRow: 4,
+    },
+    player: {
+      enablePlayer: false,
+      enableCursor: false,
+      scrollElement: el,
+    },
+  });
+  return state.alphaTab;
+}
+
+async function renderAlphaTab(xml) {
+  const api = await ensureAlphaTab();
+  const bytes = new TextEncoder().encode(xml);
+  const ok = api.load(bytes);
+  if (ok === false) throw new Error("alphaTab이 이 악보를 열지 못했습니다");
+  await new Promise((resolve) => {
+    const timer = setTimeout(resolve, 20000);
+    if (api.renderFinished && api.renderFinished.on) {
+      const off = api.renderFinished.on(() => {
+        clearTimeout(timer);
+        if (typeof off === "function") off();
+        resolve();
+      });
+    }
+  });
+}
+
+function refreshNotation() {
+  const view = state.notationView;
+  if (view !== "osmd" && view !== "alphatab") return;
+  const notes = notationSourceNotes();
+  if (!notes.length) {
+    setNotationNote("MIDI가 없습니다.");
+    return;
+  }
+  const token = ++notationToken;
+  setNotationNote("악보 그리는 중…");
+  const xml = buildNotationXml();
+  const job = view === "osmd" ? renderOsmd(xml) : renderAlphaTab(xml);
+  job.then(() => {
+    if (token !== notationToken) return;
+    setNotationNote(NOTATION_NOTES[view]);
+    requestAnimationFrame(() => syncNotationScroll(state.playhead));
+  }).catch((err) => {
+    if (token !== notationToken) return;
+    setNotationNote("악보를 그리지 못했습니다. " + (err && err.message ? err.message : err));
+  });
+}
+
+function setNotationView(name) {
+  state.notationView = name;
+  document.querySelectorAll("#notation-switch button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.notation === name);
+  });
+  const map = { roll: "roll-wrap", osmd: "osmd-wrap", alphatab: "alphatab-wrap", musescore: "musescore-wrap" };
+  for (const [key, id] of Object.entries(map)) {
+    const el = $(id);
+    if (el) el.hidden = key !== name;
+  }
+  setNotationNote(NOTATION_NOTES[name] || "");
+  if (name === "musescore") updateMuseScoreLink();
+  if (name === "osmd" || name === "alphatab") refreshNotation();
+  else draw(state.playhead);
+}
+
 function bind() {
   document.querySelectorAll(".tabs button").forEach((b) => {
     b.onclick = () => showTab(b.dataset.tab);
@@ -780,6 +1063,13 @@ function bind() {
   $("upload-btn").onclick = () => $("file").click();
   const wrap = $("roll-wrap");
   if (wrap) wrap.addEventListener("click", seekFromRollEvent);
+  document.querySelectorAll("#notation-switch button").forEach((b) => {
+    b.onclick = () => setNotationView(b.dataset.notation);
+  });
+  for (const id of ["osmd-wrap", "alphatab-wrap"]) {
+    const pane = $(id);
+    if (pane) pane.addEventListener("click", seekFromNotationEvent);
+  }
   const listen = $("listen");
   if (listen) {
     listen.addEventListener("play", () => {

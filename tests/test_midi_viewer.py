@@ -40,7 +40,13 @@ def test_midi_viewer_page_exists():
     assert "seekFromRollEvent" in js
     assert "#roll-wrap" in css and "cursor: pointer" in css.split("#roll-wrap", 1)[1].split("}", 1)[0]
     assert "검수 시작 마디" in page
-    assert "눌러서 그 시간으로" in page
+    assert 'data-notation="osmd"' in page
+    assert 'data-notation="alphatab"' in page
+    assert 'data-notation="musescore"' in page
+    assert "function notesToMusicXml" in js
+    assert "opensheetmusicdisplay" in js
+    assert "@coderline/alphatab" in js
+    assert "출판 탭이 아닙니다" in js
 
 
 def test_studio_catalog_lists_fixture_songs():
