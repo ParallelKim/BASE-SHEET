@@ -829,41 +829,163 @@ function notationSourceNotes() {
   return [];
 }
 
+function sameNotationPitch(a, b) {
+  return a === b || Math.abs(a - b) === 12;
+}
+
+function mergeSamePitch(notes) {
+  const out = [];
+  for (const n of notes) {
+    const prev = out[out.length - 1];
+    if (prev && sameNotationPitch(prev.pitch, n.pitch) && n.start - prev.end < 0.45) {
+      prev.end = Math.max(prev.end, n.end);
+      if (n.end - n.start > prev.end - prev.start) prev.pitch = n.pitch;
+    } else {
+      out.push({ start: n.start, end: n.end, pitch: n.pitch });
+    }
+  }
+  return out;
+}
+
+function cleanNotationNotes(raw) {
+  const sorted = raw
+    .filter((n) => n.end - n.start >= 0.08)
+    .map((n) => ({ start: n.start, end: n.end, pitch: n.pitch }))
+    .sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const mono = [];
+  for (const n of sorted) {
+    if (!mono.length) {
+      mono.push({ ...n });
+      continue;
+    }
+    const prev = mono[mono.length - 1];
+    if (n.start >= prev.end - 0.02) {
+      mono.push({ ...n });
+      continue;
+    }
+    const nDur = n.end - Math.max(n.start, prev.start);
+    const prevDur = prev.end - prev.start;
+    if (nDur > prevDur && n.start <= prev.start + 0.08) {
+      mono[mono.length - 1] = { ...n };
+      continue;
+    }
+    if (n.end <= prev.end) continue;
+    prev.end = Math.max(prev.start, n.start);
+    if (prev.end - prev.start < 0.2) mono.pop();
+    mono.push({ start: Math.max(n.start, prev ? prev.end : n.start), end: n.end, pitch: n.pitch });
+  }
+  let notes = mergeSamePitch(mono.filter((n) => n.end - n.start >= 0.2));
+  const kept = [];
+  for (let i = 0; i < notes.length; i++) {
+    const n = notes[i];
+    const dur = n.end - n.start;
+    const prev = notes[i - 1];
+    const next = notes[i + 1];
+    const gapBefore = prev ? n.start - prev.end : 99;
+    const gapAfter = next ? next.start - n.end : 99;
+    const betweenSame = prev && next && sameNotationPitch(prev.pitch, next.pitch)
+      && !sameNotationPitch(prev.pitch, n.pitch) && gapBefore < 0.5 && gapAfter < 0.5 && dur < 0.45;
+    const flicker = dur < 0.28 && (
+      (prev && sameNotationPitch(prev.pitch, n.pitch) === false && Math.abs(prev.pitch - n.pitch) <= 2 && (prev.end - prev.start) >= dur * 2 && gapBefore < 0.35)
+      || (next && Math.abs(next.pitch - n.pitch) <= 2 && (next.end - next.start) >= dur * 2 && gapAfter < 0.35 && (!prev || sameNotationPitch(prev.pitch, next.pitch)))
+    );
+    if (betweenSame || flicker) continue;
+    const pitch = prev && sameNotationPitch(prev.pitch, n.pitch) ? prev.pitch : n.pitch;
+    kept.push({ start: n.start, end: n.end, pitch });
+  }
+  notes = mergeSamePitch(kept);
+  const snapped = [];
+  for (const n of notes) {
+    const start = Math.round(n.start * 2) / 2;
+    let end = Math.round(n.end * 2) / 2;
+    if (end <= start) end = start + 0.5;
+    const prev = snapped[snapped.length - 1];
+    if (prev && start < prev.end) {
+      if (sameNotationPitch(prev.pitch, n.pitch)) {
+        prev.end = Math.max(prev.end, end);
+        continue;
+      }
+      if (end - start <= prev.end - prev.start) continue;
+      prev.end = start;
+      if (prev.end <= prev.start) snapped.pop();
+    }
+    snapped.push({ start, end, pitch: n.pitch });
+  }
+  return snapped.filter((n) => n.end - n.start >= 0.5);
+}
+
+const NOTE_TYPES = [[4, "whole", false], [3, "half", true], [2, "half", false], [1.5, "quarter", true], [1, "quarter", false], [0.5, "eighth", false]];
+
+function durationChunks(ql) {
+  const chunks = [];
+  let left = Math.round(ql * 2) / 2;
+  while (left > 0.24) {
+    const hit = NOTE_TYPES.find((row) => row[0] <= left + 1e-6);
+    if (!hit) break;
+    chunks.push({ ql: hit[0], type: hit[1], dot: hit[2] });
+    left = Math.round((left - hit[0]) * 2) / 2;
+  }
+  return chunks;
+}
+
 function notesToMusicXml(mono, bpm, keyText, title) {
   const key = keyInfo(keyText);
-  const last = mono.reduce((m, n) => Math.max(m, n.end), 0);
-  const slots = Math.max(8, Math.ceil(last * 2));
-  const grid = new Array(slots).fill(null);
-  for (const n of mono) {
-    const a = Math.max(0, Math.round(n.start * 2));
-    const b = Math.max(a + 1, Math.round(n.end * 2));
-    for (let i = a; i < b && i < grid.length; i++) grid[i] = n.pitch;
+  const notes = mono.filter((n) => n.end > n.start);
+  const endQl = notes.reduce((m, n) => Math.max(m, n.end), 4);
+  const bars = Math.max(1, Math.ceil(endQl / 4));
+  const events = [];
+  let cursor = 0;
+  for (const n of notes) {
+    if (n.start > cursor + 0.2) events.push({ start: cursor, end: n.start, pitch: null });
+    events.push(n);
+    cursor = n.end;
   }
-  while (grid.length % 8) grid.push(null);
+  if (cursor < bars * 4 - 0.2) events.push({ start: cursor, end: bars * 4, pitch: null });
   let measures = "";
-  for (let i = 0; i < grid.length; i++) {
-    if (i % 8 === 0) {
-      measures += `<measure number="${i / 8 + 1}">`;
-      if (i === 0) {
-        measures += `<attributes><divisions>2</divisions><key><fifths>${key.fifths}</fifths><mode>${key.mode}</mode></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef><staff-details><staff-lines>4</staff-lines><staff-tuning line="1"><tuning-step>G</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="2"><tuning-step>D</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="3"><tuning-step>A</tuning-step><tuning-octave>1</tuning-octave></staff-tuning><staff-tuning line="4"><tuning-step>E</tuning-step><tuning-octave>1</tuning-octave></staff-tuning></staff-details></attributes>`;
-        measures += `<direction><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${Math.round(bpm)}</per-minute></metronome></direction-type><sound tempo="${Math.round(bpm)}"/></direction>`;
-      }
+  let measure = 1;
+  let open = false;
+  const openMeasure = () => {
+    if (open) return;
+    measures += `<measure number="${measure}">`;
+    if (measure === 1) {
+      measures += `<attributes><divisions>2</divisions><key><fifths>${key.fifths}</fifths><mode>${key.mode}</mode></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef><staff-details><staff-lines>4</staff-lines><staff-tuning line="1"><tuning-step>G</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="2"><tuning-step>D</tuning-step><tuning-octave>2</tuning-octave></staff-tuning><staff-tuning line="3"><tuning-step>A</tuning-step><tuning-octave>1</tuning-octave></staff-tuning><staff-tuning line="4"><tuning-step>E</tuning-step><tuning-octave>1</tuning-octave></staff-tuning></staff-details></attributes>`;
+      measures += `<direction><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${Math.round(bpm)}</per-minute></metronome></direction-type><sound tempo="${Math.round(bpm)}"/></direction>`;
     }
-    const pitch = grid[i];
-    const prev = i > 0 && grid[i - 1] === pitch && pitch != null;
-    const next = i + 1 < grid.length && grid[i + 1] === pitch && pitch != null;
-    if (pitch == null) {
-      measures += `<note><rest/><duration>1</duration><type>eighth</type></note>`;
-    } else {
-      const sp = spellPitch(pitch, key.fifths);
-      const sf = bassStringFret(pitch);
-      const alter = sp.alter ? `<alter>${sp.alter}</alter>` : "";
-      const ties = `${prev ? `<tie type="stop"/>` : ""}${next ? `<tie type="start"/>` : ""}`;
-      const tied = `${prev ? `<tied type="stop"/>` : ""}${next ? `<tied type="start"/>` : ""}`;
-      measures += `<note><pitch><step>${sp.step}</step>${alter}<octave>${sp.octave}</octave></pitch><duration>1</duration>${ties}<type>eighth</type><notations>${tied}<technical><string>${sf.string}</string><fret>${sf.fret}</fret></technical></notations></note>`;
+    open = true;
+  };
+  const closeMeasure = () => {
+    if (!open) return;
+    measures += `</measure>`;
+    open = false;
+    measure += 1;
+  };
+  for (const ev of events) {
+    let t = ev.start;
+    while (t < ev.end - 0.05) {
+      const barEnd = measure * 4;
+      const slice = Math.min(ev.end, barEnd) - t;
+      const chunks = durationChunks(slice);
+      chunks.forEach((chunk, idx) => {
+        openMeasure();
+        const more = idx < chunks.length - 1 || ev.end > barEnd + 0.05;
+        const tiedIn = ev.pitch != null && (t > ev.start + 0.05);
+        if (ev.pitch == null) {
+          measures += `<note><rest/><duration>${chunk.ql * 2}</duration><type>${chunk.type}</type>${chunk.dot ? `<dot/>` : ""}</note>`;
+        } else {
+          const sp = spellPitch(ev.pitch, key.fifths);
+          const sf = bassStringFret(ev.pitch);
+          const alter = sp.alter ? `<alter>${sp.alter}</alter>` : "";
+          const ties = `${tiedIn ? `<tie type="stop"/>` : ""}${more ? `<tie type="start"/>` : ""}`;
+          const tied = `${tiedIn ? `<tied type="stop"/>` : ""}${more ? `<tied type="start"/>` : ""}`;
+          measures += `<note><pitch><step>${sp.step}</step>${alter}<octave>${sp.octave}</octave></pitch><duration>${chunk.ql * 2}</duration>${ties}<type>${chunk.type}</type>${chunk.dot ? `<dot/>` : ""}<notations>${tied}<technical><string>${sf.string}</string><fret>${sf.fret}</fret></technical></notations></note>`;
+        }
+        t += chunk.ql;
+      });
+      if (Math.abs(t - barEnd) < 0.06) closeMeasure();
+      if (!chunks.length) break;
     }
-    if (i % 8 === 7) measures += `</measure>`;
   }
+  closeMeasure();
   return `<?xml version="1.0" encoding="UTF-8"?>` +
     `<score-partwise version="3.1"><work><work-title>${xmlEscape(title || "Bass")}</work-title></work>` +
     `<part-list><score-part id="P1"><part-name>Bass</part-name>` +
@@ -877,21 +999,16 @@ function buildNotationXml() {
   const bpm = (song && song.bpm) || (state.tracks[0] && state.tracks[0].bpm) || 120;
   const origin = (song && song.t0) || 0;
   const beat = 60 / bpm;
-  const mono = [];
+  const raw = [];
   for (const n of notationSourceNotes()) {
     let start = (n.start - origin) / beat;
     let end = (n.end - origin) / beat;
     if (end <= 0) continue;
     if (start < 0) start = 0;
-    start = Math.round(start * 2) / 2;
-    end = Math.max(start + 0.5, Math.round(end * 2) / 2);
-    if (mono.length && start < mono[mono.length - 1].end) {
-      if (start <= mono[mono.length - 1].start) continue;
-      mono[mono.length - 1].end = start;
-    }
-    mono.push({ start, end, pitch: n.pitch });
+    if (end - start < 0.08) continue;
+    raw.push({ start, end, pitch: n.pitch });
   }
-  return notesToMusicXml(mono, bpm, song && song.key, song && song.title);
+  return notesToMusicXml(cleanNotationNotes(raw), bpm, song && song.key, song && song.title);
 }
 
 function setNotationNote(text) {
@@ -901,8 +1018,8 @@ function setNotationNote(text) {
 
 const NOTATION_NOTES = {
   roll: "피아노롤은 가로가 시간입니다. 누르면 그 시간으로 갑니다. 노란 선·띠가 위 가운데 마디와 같습니다.",
-  osmd: "OSMD · BSD. 같은 MIDI를 8분 그리드 오선으로 그렸습니다. 마디 번호는 연주 순서입니다. 칸을 누르면 그 높이의 시간으로 갑니다.",
-  alphatab: "alphaTab · MPL-2.0. 오선과 4현 탭입니다. 줄·프렛은 표준 튜닝에서 가장 낮은 프렛으로 추정한 것이고, 출판 탭이 아닙니다.",
+  osmd: "OSMD · BSD. 악보에 그리기 전에 짧은 음정 흔들림은 빼며, 같은 음은 한 음표로 잇습니다. 피아노롤의 MIDI는 그대로입니다.",
+  alphatab: "alphaTab · MPL-2.0. 오선과 4현 탭입니다. 짧은 흔들림은 빼며 같은 음은 한 음표로 잇습니다. 줄·프렛은 표준 튜닝 추정이고, 출판 탭이 아닙니다.",
   musescore: "MuseScore는 데스크톱 앱입니다. MIDI를 받아 거기서 열면 오선으로 양자화됩니다.",
 };
 

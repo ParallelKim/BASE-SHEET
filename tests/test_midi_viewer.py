@@ -46,7 +46,8 @@ def test_midi_viewer_page_exists():
     assert "function notesToMusicXml" in js
     assert "opensheetmusicdisplay" in js
     assert "@coderline/alphatab" in js
-    assert "출판 탭이 아닙니다" in js
+    assert "function cleanNotationNotes" in js
+    assert "짧은 음정 흔들림" in js
 
 
 def test_studio_catalog_lists_fixture_songs():
