@@ -62,6 +62,7 @@ def run(
     raw_notes = correct.snap_register_to_neighbors(raw_notes)
     raw_notes = segment.stamp_amplitudes(y, sr, raw_notes)
     raw_notes = rhythm.make_monophonic(raw_notes)
+    raw_notes = correct.suppress_pitch_blips(raw_notes)
 
     out = Path(out_dir)
     midi_path = notate.write_performance_midi(
