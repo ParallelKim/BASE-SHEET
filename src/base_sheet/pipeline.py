@@ -60,6 +60,7 @@ def run(
         y, sr, raw_notes, used_bpm, grid, min_duration=min_duration
     )
     raw_notes = correct.snap_register_to_neighbors(raw_notes)
+    raw_notes = correct.lift_missing_octave(y, sr, raw_notes)
     raw_notes = segment.stamp_amplitudes(y, sr, raw_notes)
     raw_notes = rhythm.make_monophonic(raw_notes)
     raw_notes = correct.suppress_pitch_blips(raw_notes)
