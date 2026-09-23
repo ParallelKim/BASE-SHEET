@@ -368,3 +368,95 @@ def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) ->
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )
     return out
+
+
+def _median_note_magnitude(
+    stft: np.ndarray,
+    times: np.ndarray,
+    note: NoteEvent,
+) -> np.ndarray:
+    body0 = note.start + min(0.03, 0.25 * note.duration)
+    body1 = note.end
+    mask = (times >= body0) & (times < body1)
+    if not np.any(mask):
+        idx = int(np.clip(np.searchsorted(times, note.start), 0, stft.shape[1] - 1))
+        return stft[:, idx]
+    return np.median(stft[:, mask], axis=1)
+
+
+def lift_missing_octave(
+    y: np.ndarray,
+    sr: int | float,
+    notes: list[NoteEvent],
+    *,
+    f0_ratio: float = 0.07,
+    odd_ratio: float = 0.18,
+    hi_min: int = 40,
+    hi_max: int = 54,
+    neighbor_window: float = 1.5,
+    neighbor_floor: int = 40,
+    isolated_f0_ratio: float = 0.012,
+    isolated_odd_ratio: float = 0.08,
+    isolated_min_duration: float = 1.0,
+) -> list[NoteEvent]:
+    """Lift a note one octave when the sounding tone is the upper one.
+
+    ``choose_octave_from_spectrum`` only looks downward, so a note already
+    written on the low string stays there even when the stem has no low
+    fundamental. Lift ``p`` to ``p+12`` when the upper band carries the
+    tone and a neighbor within ``neighbor_window`` seconds is already in
+    that register. A long note with almost no lower fundamental lifts
+    even alone (a whole-note octave miss surrounded by other misses).
+
+    A real low note whose first harmonic is loud keeps its pitch: the
+    lower fundamental or its odd harmonics have to be weak.
+    """
+    import librosa
+
+    if len(notes) == 0:
+        return []
+    hop = 512
+    n_fft = 8192
+    stft = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop))
+    freqs = librosa.fft_frequencies(sr=float(sr), n_fft=n_fft)
+    times = librosa.frames_to_time(np.arange(stft.shape[1]), sr=sr, hop_length=hop)
+    ordered = list(notes)
+    mags = [_median_note_magnitude(stft, times, note) for note in ordered]
+    starts = [float(note.start) for note in ordered]
+    pitches = [int(note.pitch) for note in ordered]
+
+    def _weak_lower(mag: np.ndarray, pitch: int, hi: int, f0_lim: float, odd_lim: float) -> bool:
+        e_lo = _band_energy(mag, freqs, float(librosa.midi_to_hz(pitch)))
+        e_hi = _band_energy(mag, freqs, float(librosa.midi_to_hz(hi)))
+        if e_hi < 1e-8:
+            return False
+        e3 = _band_energy(mag, freqs, 3.0 * float(librosa.midi_to_hz(pitch)))
+        e5 = _band_energy(mag, freqs, 5.0 * float(librosa.midi_to_hz(pitch)))
+        peak = max(e_hi, 1e-9)
+        has_f0 = e_lo >= f0_lim * peak
+        has_odd = (e3 + 0.5 * e5) >= odd_lim * peak
+        return not (has_f0 or has_odd)
+
+    out: list[NoteEvent] = []
+    for i, note in enumerate(ordered):
+        pitch = pitches[i]
+        hi = pitch + 12
+        if not (hi_min <= hi <= hi_max) or hi > BASS_MIDI_MAX:
+            out.append(note)
+            continue
+        mag = mags[i]
+        neighbor = any(
+            j != i and abs(starts[j] - starts[i]) <= neighbor_window and pitches[j] >= neighbor_floor
+            for j in range(len(ordered))
+        )
+        contextual = neighbor and _weak_lower(mag, pitch, hi, f0_ratio, odd_ratio)
+        isolated = (
+            note.duration >= isolated_min_duration
+            and _weak_lower(mag, pitch, hi, isolated_f0_ratio, isolated_odd_ratio)
+        )
+        if contextual or isolated:
+            pitch = hi
+        out.append(
+            NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
+        )
+    return out
