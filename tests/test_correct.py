@@ -5,7 +5,6 @@ from base_sheet.correct import (
     correct_note_octaves,
     correct_octave_errors,
     drop_short_notes,
-    lift_missing_octave,
     median_filter_pitches,
     snap_register_to_neighbors,
     suppress_pitch_blips,
@@ -207,38 +206,24 @@ def _tone(sr: int, seconds: float, *partials: tuple[float, float]) -> np.ndarray
     return y.astype(np.float32)
 
 
-def test_lift_missing_octave_raises_e2_beside_a_high_neighbor():
+def test_bottom_octave_lifts_when_the_upper_note_is_the_tone():
     sr = 22050
-    y = _tone(sr, 1.2, (82.41, 0.8))
-    notes = [NoteEvent(0.05, 0.50, 45), NoteEvent(0.60, 1.10, 28)]
-    out = lift_missing_octave(y, sr, notes)
-    assert [n.pitch for n in out] == [45, 40]
-    assert len(out) == 2
+    y = _tone(sr, 1.0, (82.41, 0.8))
+    notes = [
+        NoteEvent(0.0, 0.3, 28),
+        NoteEvent(0.35, 0.9, 28),
+    ]
+    out = correct_note_octaves(y, sr, notes, snap=False)
+    assert [n.pitch for n in out] == [40, 40]
 
 
-def test_lift_missing_octave_keeps_e1_when_fundamental_is_present():
+def test_bottom_octave_stays_when_fundamental_and_odd_harmonics_exist():
     sr = 22050
     f = 41.20
-    y = _tone(sr, 1.2, (f, 0.45), (2 * f, 0.9), (3 * f, 0.35))
-    notes = [NoteEvent(0.05, 0.45, 45), NoteEvent(0.55, 1.10, 28)]
-    out = lift_missing_octave(y, sr, notes)
-    assert out[1].pitch == 28
-
-
-def test_lift_missing_octave_does_not_raise_a_short_note_alone():
-    sr = 22050
-    y = _tone(sr, 0.8, (82.41, 0.8))
-    notes = [NoteEvent(0.05, 0.50, 28)]
-    out = lift_missing_octave(y, sr, notes)
+    y = _tone(sr, 1.0, (f, 0.45), (2 * f, 0.9), (3 * f, 0.4))
+    notes = [NoteEvent(0.05, 0.9, 28)]
+    out = correct_note_octaves(y, sr, notes, snap=False)
     assert out[0].pitch == 28
-
-
-def test_lift_missing_octave_raises_a_long_tone_with_no_low_fundamental():
-    sr = 22050
-    y = _tone(sr, 1.6, (92.50, 0.8))
-    notes = [NoteEvent(0.05, 1.40, 30)]
-    out = lift_missing_octave(y, sr, notes)
-    assert out[0].pitch == 42
 
 
 def test_spectrum_keeps_g2_when_odd_harmonics_belong_to_g2():
