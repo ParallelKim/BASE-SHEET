@@ -198,6 +198,34 @@ def test_flageolet_g4_sine_is_not_folded_to_open_string():
     assert maybe_flageolet_pitch(mag, freqs, 36) == 67
 
 
+def _tone(sr: int, seconds: float, *partials: tuple[float, float]) -> np.ndarray:
+    t = np.arange(int(seconds * sr)) / sr
+    y = np.zeros_like(t)
+    for freq, amp in partials:
+        y += amp * np.sin(2 * np.pi * freq * t)
+    return y.astype(np.float32)
+
+
+def test_bottom_octave_lifts_when_the_upper_note_is_the_tone():
+    sr = 22050
+    y = _tone(sr, 1.0, (82.41, 0.8))
+    notes = [
+        NoteEvent(0.0, 0.3, 28),
+        NoteEvent(0.35, 0.9, 28),
+    ]
+    out = correct_note_octaves(y, sr, notes, snap=False)
+    assert [n.pitch for n in out] == [40, 40]
+
+
+def test_bottom_octave_stays_when_fundamental_and_odd_harmonics_exist():
+    sr = 22050
+    f = 41.20
+    y = _tone(sr, 1.0, (f, 0.45), (2 * f, 0.9), (3 * f, 0.4))
+    notes = [NoteEvent(0.05, 0.9, 28)]
+    out = correct_note_octaves(y, sr, notes, snap=False)
+    assert out[0].pitch == 28
+
+
 def test_spectrum_keeps_g2_when_odd_harmonics_belong_to_g2():
     freqs = np.linspace(0, 500, 1001)
     mag = np.zeros_like(freqs)

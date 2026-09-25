@@ -60,6 +60,8 @@ def run(
         y, sr, raw_notes, used_bpm, grid, min_duration=min_duration
     )
     raw_notes = correct.snap_register_to_neighbors(raw_notes)
+    # After neighbor-folding, lift only a bottom octave that has no fundamental.
+    raw_notes = correct.correct_note_octaves(y, sr, raw_notes, snap=False, direction="up")
     raw_notes = segment.stamp_amplitudes(y, sr, raw_notes)
     raw_notes = rhythm.make_monophonic(raw_notes)
     raw_notes = correct.suppress_pitch_blips(raw_notes)

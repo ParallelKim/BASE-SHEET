@@ -194,6 +194,43 @@ def _harmonic_score(mag: np.ndarray, freqs: np.ndarray, midi_pitch: int) -> floa
     return score
 
 
+def _lower_is_sounding_fundamental(
+    mag: np.ndarray,
+    freqs: np.ndarray,
+    lower: int,
+    higher: int,
+) -> bool:
+    """True when ``lower`` still has a fundamental or its odd harmonics.
+
+    The same test decides a downward fold and an upward lift. A loud first
+    harmonic alone is not enough: a real low bass note keeps 3f or 5f.
+    """
+    import librosa
+
+    f_lo = float(librosa.midi_to_hz(lower))
+    f_hi = float(librosa.midi_to_hz(higher))
+    e_lo = _band_energy(mag, freqs, f_lo)
+    e_hi = _band_energy(mag, freqs, f_hi)
+    e3 = _band_energy(mag, freqs, 3.0 * f_lo)
+    e5 = _band_energy(mag, freqs, 5.0 * f_lo)
+    peak = max(e_hi, 1e-9)
+    if e_hi < 1e-8:
+        return True
+    has_f0 = e_lo >= 0.07 * peak
+    has_odd = (e3 + 0.5 * e5) >= 0.12 * peak
+    return has_f0 or has_odd
+
+
+def _lift_bottom_octave(mag: np.ndarray, freqs: np.ndarray, folded: int) -> int:
+    """From the lowest bass octave, step up one octave when that octave is the tone."""
+    higher = folded + 12
+    if higher > BASS_MIDI_MAX or higher > 54:
+        return folded
+    if _lower_is_sounding_fundamental(mag, freqs, folded, higher):
+        return folded
+    return higher
+
+
 def choose_octave_from_spectrum(
     mag: np.ndarray,
     freqs: np.ndarray,
@@ -211,7 +248,9 @@ def choose_octave_from_spectrum(
         return int(midi_pitch)
     lower = folded - 12
     if lower < BASS_MIDI_MIN:
-        return folded
+        # Already on the bottom octave, so the usual downward search cannot
+        # see a real note an octave higher. Use the same fundamental test.
+        return _lift_bottom_octave(mag, freqs, folded)
     f_hi = float(librosa.midi_to_hz(folded))
     f_lo = float(librosa.midi_to_hz(lower))
     e_lo = _band_energy(mag, freqs, f_lo)
@@ -295,8 +334,17 @@ def correct_note_octaves(
     y: np.ndarray,
     sr: int | float,
     notes: list[NoteEvent],
+    *,
+    snap: bool = True,
+    direction: str = "both",
 ) -> list[NoteEvent]:
-    """Re-choose each note's octave from the stem spectrum (f vs 2f)."""
+    """Re-choose each note's octave from the stem spectrum (f vs 2f).
+
+    ``direction="up"`` only lifts a bottom-octave note whose fundamental
+    is missing. The pipeline uses that after neighbor-folding, so a real
+    upper octave is not folded away and highs that already survived are
+    left alone.
+    """
     import librosa
 
     if not notes:
@@ -316,7 +364,10 @@ def correct_note_octaves(
             mag = stft[:, idx]
         else:
             mag = np.median(stft[:, mask], axis=1)
-        pitch = choose_octave_from_spectrum(mag, freqs, note.pitch)
+        if direction == "up" and int(note.pitch) - 12 >= BASS_MIDI_MIN:
+            pitch = int(note.pitch)
+        else:
+            pitch = choose_octave_from_spectrum(mag, freqs, note.pitch)
         lifted = maybe_flageolet_pitch(mag, freqs, pitch)
         if lifted >= 55 and lifted != pitch:
             import librosa
@@ -328,7 +379,9 @@ def correct_note_octaves(
         out.append(
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )
-    return snap_register_to_neighbors(out)
+    if snap:
+        return snap_register_to_neighbors(out)
+    return out
 
 
 def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) -> list[NoteEvent]:
@@ -368,3 +421,4 @@ def snap_register_to_neighbors(notes: list[NoteEvent], window_s: float = 2.0) ->
             NoteEvent(start=note.start, end=note.end, pitch=pitch, amplitude=note.amplitude)
         )
     return out
+
