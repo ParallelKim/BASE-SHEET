@@ -13,11 +13,11 @@ def test_published_score_pdfs_are_in_fixtures():
     for name in (
         "ijji_bass_score.pdf",
         "Antifreeze_bass_score.pdf",
-        "도시의 밤_bass_score.pdf",
-        "나이_bass_score.pdf",
-        "Wake Me Up When September Ends_bass_score.pdf",
-        "삐딱하게_bass_score.pdf",
-        "박하사탕_bass_score.pdf",
+        "city_night_bass_score.pdf",
+        "nai_bass_score.pdf",
+        "september_ends_bass_score.pdf",
+        "crooked_bass_score.pdf",
+        "bakhasatang_bass_score.pdf",
     ):
         path = fixtures / name
         assert path.is_file(), name
@@ -29,11 +29,11 @@ def test_mixed_stems_are_in_fixtures():
     stems = (
         "Antifreeze_bass_mixed.m4a",
         "있지 - 자우림_bass_mixed.m4a",
-        "도시의 밤 - 소울라이츠_bass_mixed.mp3",
-        "나이 - 윤종신_bass_mixed.mp3",
-        "Wake Me Up When September Ends - Green Day_bass_mixed.mp3",
-        "삐딱하게 - G-DRAGON_bass_mixed.mp3",
-        "박하사탕 - YB_bass_mixed.mp3",
+        "city_night_bass_mixed.mp3",
+        "nai_bass_mixed.mp3",
+        "september_ends_bass_mixed.mp3",
+        "crooked_bass_mixed.mp3",
+        "bakhasatang_bass_mixed.mp3",
     )
     for name in stems:
         path = fixtures / name

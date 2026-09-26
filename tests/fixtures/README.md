@@ -10,16 +10,18 @@
 | `Antifreeze_bass_score.pdf` | Antifreeze 출판 베이스 악보 |
 | `Antifreeze_bass_mixed.m4a` | Antifreeze 베이스 스템 (믹스 잔여 있음) |
 | `있지 - 자우림_bass_mixed.m4a` | 있지 베이스 스템 (믹스 잔여 있음). 식별자는 계속 `ijji` |
-| `도시의 밤 - 소울라이츠_bass_mixed.mp3` | 소울라이츠 「도시의 밤」 베이스 스템 |
-| `도시의 밤_bass_score.pdf` | 도시의 밤 베이스 악보 |
-| `나이 - 윤종신_bass_mixed.mp3` | 윤종신 「나이」 라이브 베이스 스템 |
-| `나이_bass_score.pdf` | 나이 베이스 악보 |
-| `Wake Me Up When September Ends - Green Day_bass_mixed.mp3` | Green Day 베이스 스템 |
-| `Wake Me Up When September Ends_bass_score.pdf` | Wake Me Up When September Ends 베이스 악보 |
-| `삐딱하게 - G-DRAGON_bass_mixed.mp3` | G-DRAGON 「삐딱하게」 베이스 스템 |
-| `삐딱하게_bass_score.pdf` | 삐딱하게 베이스 탭 |
-| `박하사탕 - YB_bass_mixed.mp3` | YB 「박하사탕」 베이스 스템 |
-| `박하사탕_bass_score.pdf` | 박하사탕 7집 버전 베이스 악보 |
+| `city_night_bass_mixed.mp3` | 소울라이츠 「도시의 밤」 베이스 스템 |
+| `city_night_bass_score.pdf` | 도시의 밤 베이스 악보 (Finale, 7쪽) |
+| `nai_bass_mixed.mp3` | 윤종신 「나이」 라이브 베이스 스템 |
+| `nai_bass_score.pdf` | 나이 베이스 악보 (MuseScore, 2쪽) |
+| `september_ends_bass_mixed.mp3` | Green Day 「Wake Me Up When September Ends」 베이스 스템 |
+| `september_ends_bass_score.pdf` | September Ends 베이스 악보 (4쪽) |
+| `crooked_bass_mixed.mp3` | G-DRAGON 「삐딱하게」 베이스 스템 |
+| `crooked_bass_score.pdf` | 삐딱하게 베이스 탭 (InDesign, 4쪽) |
+| `bakhasatang_bass_mixed.mp3` | YB 「박하사탕」 베이스 스템 |
+| `bakhasatang_bass_score.pdf` | 박하사탕 7집 버전 베이스 악보 (5쪽) |
+
+새 다섯 곡은 `{id}_bass_mixed`와 `{id}_bass_score`로 짝을 맞춘다. `ijji*` 이름은 바꾸지 않는다. Antifreeze도 같은 `{id}_bass_*` 형식이다.
 | `score_crops/ijji/m001.png` … `m072.png` | 있지 기보 마디 크롭 |
 | `score_crops/antifreeze/m001.png` … `m080.png` | Antifreeze 기보 마디 크롭 |
 | `score_crops/*/pages/pN.png` | 페이지 전체 |
