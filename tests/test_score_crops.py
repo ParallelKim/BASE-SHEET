@@ -58,6 +58,10 @@ def test_score_crop_pages_and_manifest_exist():
     assert (CROPS / "ijji" / "pages" / "p1.png").is_file()
     assert (CROPS / "ijji" / "pages" / "p4.png").is_file()
     assert (CROPS / "antifreeze" / "pages" / "p5.png").is_file()
+    assert (CROPS / "bakhasatang" / "pages" / "p1.png").is_file()
+    assert (CROPS / "bakhasatang" / "pages" / "p5.png").is_file()
+    assert (CROPS / "nai" / "pages" / "p1.png").is_file()
+    assert (CROPS / "nai" / "pages" / "p2.png").is_file()
     text = (CROPS / "manifest.json").read_text(encoding="utf-8")
     assert '"bar": 72' in text
     assert '"bar": 80' in text

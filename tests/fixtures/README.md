@@ -22,6 +22,8 @@
 | `bakhasatang_bass_score.pdf` | 박하사탕 7집 버전 베이스 악보 (5쪽) |
 
 새 다섯 곡은 `{id}_bass_mixed`와 `{id}_bass_score`로 짝을 맞춘다. `ijji*` 이름은 바꾸지 않는다. Antifreeze도 같은 `{id}_bass_*` 형식이다.
+| `score_crops/bakhasatang/pages/p1.png` … `p5.png` | 박하사탕 페이지. 마디 크롭·차트는 아직 없음. 인쇄 템포 105, 4/4 |
+| `score_crops/nai/pages/p1.png` … `p2.png` | 나이 페이지. 마디 크롭·차트는 아직 없음. 인쇄 템포 65, 4/4 |
 | `score_crops/ijji/m001.png` … `m072.png` | 있지 기보 마디 크롭 |
 | `score_crops/antifreeze/m001.png` … `m080.png` | Antifreeze 기보 마디 크롭 |
 | `score_crops/*/pages/pN.png` | 페이지 전체 |
