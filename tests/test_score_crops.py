@@ -10,18 +10,34 @@ def test_crop_script_exists():
 
 def test_published_score_pdfs_are_in_fixtures():
     fixtures = ROOT / "tests" / "fixtures"
-    assert (fixtures / "ijji_bass_score.pdf").is_file()
-    assert (fixtures / "Antifreeze_bass_score.pdf").is_file()
-    assert (fixtures / "ijji_bass_score.pdf").stat().st_size > 10_000
-    assert (fixtures / "Antifreeze_bass_score.pdf").stat().st_size > 10_000
+    for name in (
+        "ijji_bass_score.pdf",
+        "Antifreeze_bass_score.pdf",
+        "도시의 밤_bass_score.pdf",
+        "나이_bass_score.pdf",
+        "Wake Me Up When September Ends_bass_score.pdf",
+        "삐딱하게_bass_score.pdf",
+        "박하사탕_bass_score.pdf",
+    ):
+        path = fixtures / name
+        assert path.is_file(), name
+        assert path.stat().st_size > 10_000, name
 
 
 def test_mixed_stems_are_in_fixtures():
     fixtures = ROOT / "tests" / "fixtures"
-    af = fixtures / "Antifreeze_bass_mixed.m4a"
-    ijji = fixtures / "있지 - 자우림_bass_mixed.m4a"
-    assert af.is_file() and af.stat().st_size > 100_000
-    assert ijji.is_file() and ijji.stat().st_size > 100_000
+    stems = (
+        "Antifreeze_bass_mixed.m4a",
+        "있지 - 자우림_bass_mixed.m4a",
+        "도시의 밤 - 소울라이츠_bass_mixed.mp3",
+        "나이 - 윤종신_bass_mixed.mp3",
+        "Wake Me Up When September Ends - Green Day_bass_mixed.mp3",
+        "삐딱하게 - G-DRAGON_bass_mixed.mp3",
+        "박하사탕 - YB_bass_mixed.mp3",
+    )
+    for name in stems:
+        path = fixtures / name
+        assert path.is_file() and path.stat().st_size > 100_000, name
 
 
 def test_ijji_bar_crops_cover_72_measures():
